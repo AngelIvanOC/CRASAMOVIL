@@ -1,0 +1,515 @@
+// EscanearCostenaTemplate.js
+import React, { useState, useRef, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  TextInput,
+  Alert,
+} from "react-native";
+import { useCameraPermissions } from "expo-camera";
+import { useProductos } from "../../hooks/useProductos";
+import { useRacks } from "../../hooks/useRacks";
+import CamaraCostena from "../organismos/CamaraCostena"; // Componente que crearemos después
+import CustomAlert from "../atomos/Alertas/CustomAlert";
+
+const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
+  const [permission, requestPermission] = useCameraPermissions();
+  const [updating, setUpdating] = useState(false);
+  const [productoEncontrado, setProductoEncontrado] = useState(null);
+  const [cantidadManual, setCantidadManual] = useState("1");
+  const [racksDisponibles, setRacksDisponibles] = useState([]);
+  const [rackSugerido, setRackSugerido] = useState(null);
+  const { obtenerRacksDisponiblesPorMarca } = useRacks();
+  const {
+    productos,
+    fetchProductos,
+    procesarEntradaCompleta,
+    verificarCodigoBarrasUnico,
+  } = useProductos(marca?.id);
+  const [alertVisible, setAlertVisible] = useState(false);
+
+  const [alertProps, setAlertProps] = useState({
+    title: "",
+    message: "",
+    buttons: [],
+  });
+
+  const alreadyHandledRef = useRef(false);
+  const [scanned, setScanned] = useState(false);
+  const [scanning, setScanning] = useState(false);
+
+  useEffect(() => {
+    if (!permission) {
+      requestPermission();
+    }
+  }, [permission]);
+
+  const showAlert = ({ title, message, buttons = [] }) => {
+    setAlertProps({ title, message, buttons });
+    setAlertVisible(true);
+
+    // Si no tiene botones, cerrar automáticamente después de 4 segundos
+    if (buttons.length === 0) {
+      setTimeout(() => {
+        setAlertVisible(false);
+        // Resetear estados después de mostrar la alerta
+        resetScannerState();
+      }, 4000);
+    }
+  };
+
+  const resetScannerState = () => {
+    setScanned(false);
+    setScanning(false);
+    alreadyHandledRef.current = false;
+  };
+
+  // En EscanearCostenaTemplate.js, actualiza handleProductoDetectado
+  const handleProductoDetectado = async (productoData) => {
+    try {
+      // Buscar el producto en la base de datos por código
+      const producto = productos.find(
+        (p) => String(p.codigo).trim() === String(productoData.codigo).trim()
+      );
+
+      if (!producto) {
+        /*Alert.alert(
+          "Producto no registrado",
+          `El producto con código ${productoData.codigo} no está registrado. ¿Deseas crearlo?`,
+          [
+            { text: "Cancelar", style: "cancel" },
+            {
+              text: "Crear producto",
+              onPress: () => {
+                navigation.navigate("CrearProducto", {
+                  datosIniciales: {
+                    codigo: productoData.codigo,
+                    nombre:
+                      productoData.descripcion ||
+                      `Producto ${productoData.codigo}`,
+                    marca_id: marca.id,
+                  },
+                });
+              },
+            },
+          ]
+        );*/
+
+        showAlert({
+          title: "Producto No Encontrado",
+          message: `No se encontró un producto con el código: ${productoData.codigo}`,
+        });
+        return;
+      }
+
+      // Solo verificar código de barras si el producto existe y hay código
+      if (productoData.codigoBarras) {
+        const esUnico = await verificarCodigoBarrasUnico(
+          productoData.codigoBarras
+        );
+        if (!esUnico) {
+          Alert.alert(
+            "Código ya registrado",
+            "Este código de barras ya fue escaneado anteriormente",
+            [
+              {
+                text: "Entendido",
+                onPress: () => setProductoEncontrado(null),
+              },
+            ]
+          );
+          return;
+        }
+      }
+
+      const racks = await obtenerRacksDisponiblesPorMarca(producto.marca_id);
+      setRacksDisponibles(racks);
+      setRackSugerido(racks.length > 0 ? racks[0] : null);
+
+      setProductoEncontrado({
+        ...producto,
+        cantidadEscaneada: productoData.cantidad || 1,
+        codigoBarras: productoData.codigoBarras || "",
+        fechaCaducidad: productoData.fechaCaducidad,
+        datosOCR: productoData,
+      });
+
+      console.log("Código:", productoData.codigo);
+      console.log("Descripción:", productoData.descripcion);
+      console.log("Cantidad:", productoData.cantidad);
+      console.log("Fecha caducidad:", productoData.fechaCaducidad);
+      console.log("Código de barras:", productoData.codigoBarras);
+
+      setCantidadManual(productoData.cantidad?.toString() || "1");
+    } catch (error) {
+      console.error("Error al procesar producto detectado:", error);
+      Alert.alert("Error", "No se pudo procesar el producto detectado");
+    }
+  };
+  const handleConfirmEntrada = async () => {
+    if (!productoEncontrado) return;
+
+    const cantidadFinal = parseInt(cantidadManual) || 1;
+
+    if (cantidadFinal <= 0) {
+      Alert.alert("Error", "La cantidad debe ser mayor a 0");
+      return;
+    }
+
+    Alert.alert(
+      "Confirmar Entrada",
+      `¿Confirmas la entrada de ${cantidadFinal} unidades del producto "${productoEncontrado.nombre}"?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Confirmar",
+          onPress: async () => {
+            await procesarEntrada(cantidadFinal);
+          },
+        },
+      ]
+    );
+  };
+
+  // En EscanearCostenaTemplate.js, actualiza procesarEntrada:
+
+  const procesarEntrada = async (cantidad) => {
+    try {
+      setUpdating(true);
+      await procesarEntradaCompleta(
+        productoEncontrado.id,
+        cantidad,
+        productoEncontrado.codigoBarras,
+        rackSugerido?.id || null,
+        productoEncontrado.fechaCaducidad
+      );
+
+      Alert.alert(
+        "¡Entrada Registrada!",
+        `Se han agregado ${cantidad} unidades del producto "${productoEncontrado.nombre}"`,
+        [
+          {
+            text: "Continuar",
+            onPress: () => {
+              setProductoEncontrado(null);
+              setCantidadManual("1");
+            },
+          },
+          {
+            text: "Finalizar",
+            onPress: () => {
+              if (onEntradaComplete) {
+                onEntradaComplete();
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Error procesando entrada:", error);
+
+      if (error.message.includes("ya fue registrado")) {
+        Alert.alert(
+          "Código duplicado",
+          "La etiqueta escaneada ya fue registrada. Por favor verifica:",
+          [
+            {
+              text: "Ver detalles",
+              onPress: () => {
+                navigation.navigate("HistorialEntradas", {
+                  producto: productoEncontrado,
+                });
+              },
+            },
+            {
+              text: "Continuar",
+              style: "cancel",
+              onPress: () => setProductoEncontrado(null),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Error",
+          `No se pudo procesar la entrada: ${error.message}`
+        );
+      }
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleCancelProducto = () => {
+    setProductoEncontrado(null);
+    setCantidadManual("1");
+  };
+
+  if (!permission) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#023E8A" />
+        <Text style={styles.loadingText}>
+          Solicitando permisos de cámara...
+        </Text>
+      </View>
+    );
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>
+          No se tiene acceso a la cámara. Por favor, habilita los permisos de
+          cámara en la configuración de la aplicación.
+        </Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={requestPermission}
+        >
+          <Text style={styles.retryButtonText}>Reintentar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* Cámara especial para La Costeña */}
+      {!productoEncontrado && (
+        <CamaraCostena onProductoDetectado={handleProductoDetectado} />
+      )}
+
+      {/* Información del producto encontrado */}
+
+      {productoEncontrado && (
+        <View style={styles.productInfoContainer}>
+          <Text style={styles.productTitle}>PRODUCTO JUMEX:</Text>
+          <Text style={styles.productName}>{productoEncontrado.nombre}</Text>
+          <Text style={styles.productCode}>
+            Código: {productoEncontrado.codigoBarras}
+          </Text>
+          <Text style={styles.productCode}>
+            Código: {productoEncontrado.codigo}
+          </Text>
+          <Text style={styles.productStock}>
+            Stock actual: {productoEncontrado.cantidad}
+          </Text>
+
+          {/* Mostrar fecha de caducidad si existe */}
+          {productoEncontrado.fechaCaducidad && (
+            <Text style={styles.productInfo}>
+              Fecha expiración:{" "}
+              {productoEncontrado.fechaCaducidad.toLocaleDateString()}
+            </Text>
+          )}
+
+          {/* Mostrar cantidad detectada */}
+          <Text style={styles.productInfo}>
+            Cantidad detectada: {productoEncontrado.cantidadEscaneada}
+          </Text>
+
+          <View style={styles.cantidadContainer}>
+            <Text style={styles.cantidadLabel}>Cantidad a agregar:</Text>
+            <TextInput
+              style={styles.cantidadInput}
+              value={cantidadManual}
+              onChangeText={setCantidadManual}
+              keyboardType="numeric"
+              placeholder="Cantidad"
+            />
+          </View>
+
+          {rackSugerido && (
+            <Text style={styles.productInfo}>
+              Rack sugerido: {rackSugerido.codigo_rack}
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* Controles */}
+      <View style={styles.controlsContainer}>
+        {productoEncontrado && (
+          <>
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={handleConfirmEntrada}
+              disabled={updating}
+            >
+              <Text style={styles.confirmButtonText}>
+                {updating ? "Procesando..." : "Confirmar Entrada"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancelProducto}
+              disabled={updating}
+            >
+              <Text style={styles.cancelButtonText}>
+                Escanear otro producto
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+
+      {updating && (
+        <View style={styles.updatingOverlay}>
+          <ActivityIndicator size="large" color="#023E8A" />
+          <Text style={styles.updatingText}>Procesando entrada...</Text>
+        </View>
+      )}
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertProps.title}
+        message={alertProps.message}
+        buttons={alertProps.buttons}
+        onClose={() => setAlertVisible(false)}
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#e74c3c",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: "#023E8A",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  productInfoContainer: {
+    backgroundColor: "white",
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  productTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#023E8A",
+    marginBottom: 8,
+  },
+  productName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 4,
+  },
+  productCode: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 4,
+  },
+  productStock: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 4,
+  },
+  productInfo: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 4,
+  },
+  cantidadContainer: {
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  cantidadLabel: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+  },
+  cantidadInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    backgroundColor: "#f9f9f9",
+  },
+  controlsContainer: {
+    padding: 20,
+    gap: 12,
+  },
+  confirmButton: {
+    backgroundColor: "#28a745",
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  confirmButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  cancelButton: {
+    backgroundColor: "#dc3545",
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  updatingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  updatingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "white",
+    textAlign: "center",
+  },
+});
+
+export default EscanearCostenaTemplate;

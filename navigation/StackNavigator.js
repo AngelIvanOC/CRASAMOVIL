@@ -1,0 +1,106 @@
+import React from "react";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import HomeScreen from "../screens/UserHomeScreen";
+import DetailsScreen from "../screens/DetailsScreen";
+import { Ionicons } from "@expo/vector-icons";
+import ProductosTemplate from "../components/templates/ProductosTemplate";
+import CatalogoTemplate from "../components/templates/CatalogoTemplate";
+import DetalleVentaScreen from "../screens/DetalleVentasScreen";
+import CatalogoScreen from "../screens/CatalogoScreen";
+import EscanearVentaScreen from "../screens/EscanearVentaScreen";
+import EscanearEntradaScreen from "../screens/EscanearEntradaScreen";
+import HistorialEntradasScreen from "../screens/HistorialEntradaScreen";
+import EscanearCostenaScreen from "../screens/EscanearCostenaScreen";
+
+const Stack = createNativeStackNavigator();
+
+export default function StackNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: "#023E8A" },
+        headerTintColor: "white",
+        headerTitleAlign: "left",
+        headerTitleStyle: {
+          fontSize: 24,
+          fontWeight: "bold",
+        },
+        headerBackTitleVisible: false,
+        headerBackImage: () => (
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color="white"
+            style={{ marginLeft: 10 }}
+          />
+        ),
+      }}
+    >
+      {/* Pantalla principal del almacén (catálogo de marcas) */}
+      <Stack.Screen
+        name="Home"
+        component={CatalogoScreen}
+        options={{
+          title: "Almacén",
+        }}
+      />
+      <Stack.Screen
+        name="DetalleVenta"
+        component={DetalleVentaScreen}
+        options={{
+          title: "Detalle de Venta",
+          headerStyle: {
+            backgroundColor: "#023E8A",
+          },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
+        }}
+      />
+      {/* Pantalla de productos de una marca específica */}
+      <Stack.Screen
+        name="Productos"
+        component={ProductosTemplate}
+        options={
+          {
+            // El título se configurará dinámicamente en ProductosTemplate
+          }
+        }
+      />
+
+      <Stack.Screen
+        name="EscanearVenta"
+        component={EscanearVentaScreen}
+        options={{ title: "EscanearVenta" }}
+      />
+
+      <Stack.Screen
+        name="EscanearEntrada"
+        component={EscanearEntradaScreen}
+        options={{ title: "EscanearEntrada" }}
+      />
+
+      <Stack.Screen
+        name="EscanearCostena"
+        component={EscanearCostenaScreen}
+        options={{ title: "EscanearCostena" }}
+      />
+
+      <Stack.Screen
+        name="HistorialEntradas"
+        component={HistorialEntradasScreen}
+        options={{ title: "Historial de Entradas" }}
+      />
+
+      {/* Mantén tus otras pantallas si las necesitas */}
+      <Stack.Screen
+        name="Details"
+        component={DetailsScreen}
+        options={{
+          title: "Detalles",
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
