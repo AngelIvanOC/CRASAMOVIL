@@ -9,13 +9,16 @@ import {
   TextInput,
   TouchableWithoutFeedback,
   Keyboard,
+  KeyboardAvoidingView,
   ScrollView,
+  Platform,
 } from "react-native";
 import { useCameraPermissions } from "expo-camera";
 import { useProductos } from "../../hooks/useProductos";
 import { useRacks } from "../../hooks/useRacks";
 import CamaraEscaneo from "../organismos/CamaraEscaneo";
 import CustomAlert from "../atomos/Alertas/CustomAlert";
+import ProductoEscaneadoForm from "../organismos/ProductoEscaneadoForm";
 
 const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   const [permission, requestPermission] = useCameraPermissions();
@@ -216,8 +219,8 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     }
   };
 
-  const handleConfirmEntrada = async () => {
-    if (!productoEncontrado) return;
+  const handleConfirmEntrada = (datosCompletos, cantidadFinal) => {
+    /*if (!productoEncontrado) return;
 
     const cantidadFinal =
       parseInt(cantidadManual) || productoEncontrado.cantidadEscaneada;
@@ -225,30 +228,30 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     if (cantidadFinal <= 0) {
       Alert.alert("Error", "La cantidad debe ser mayor a 0");
       return;
-    }
+    }*/
 
     Alert.alert(
       "Confirmar Entrada",
       `¿Confirmas la entrada de ${cantidadFinal} unidades del producto "${
-        productoEncontrado.nombre
+        datosCompletos.nombre
       }"?\n\nCantidad actual: ${
-        productoEncontrado.cantidad
+        datosCompletos.cantidad
       }\nCantidad después de la entrada: ${
-        productoEncontrado.cantidad + cantidadFinal
+        datosCompletos.cantidad + cantidadFinal
       }`,
       [
         { text: "Cancelar", style: "cancel" },
         {
           text: "Confirmar",
           onPress: async () => {
-            await procesarEntrada(cantidadFinal);
+            await procesarEntrada(datosCompletos, cantidadFinal);
           },
         },
       ]
     );
   };
 
-  const procesarEntrada = async (cantidad) => {
+  const procesarEntrada = async (datosCompletos, cantidad) => {
     try {
       setUpdating(true);
 
@@ -260,11 +263,11 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
 
       // Usar la función completa que actualiza el producto y crea el historial
       const resultado = await procesarEntradaCompleta(
-        productoEncontrado.id,
+        datosCompletos.id,
         cantidad,
-        productoEncontrado.codigoBarras,
+        datosCompletos.codigoBarras,
         rackSugerido?.id || null,
-        fechaCaducidadManual || null
+        datosCompletos.fechaCaducidad || null
       );
 
       console.log("Entrada procesada exitosamente:", resultado);
@@ -275,13 +278,13 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       }
 
       const cantidadAnterior =
-        resultado?.cantidadAnterior ?? productoEncontrado.cantidad;
+        resultado?.cantidadAnterior ?? datosCompletos.cantidad;
       const cantidadNueva =
-        resultado?.cantidadNueva ?? productoEncontrado.cantidad + cantidad;
+        resultado?.cantidadNueva ?? datosCompletos.cantidad + cantidad;
 
       Alert.alert(
         "¡Entrada Registrada!",
-        `Se han agregado ${cantidad} unidades del producto "${productoEncontrado.nombre}"\n\nCantidad anterior: ${cantidadAnterior}\nCantidad nueva: ${cantidadNueva}\n\nCódigo de barras: ${productoEncontrado.codigoBarras}`,
+        `Se han agregado ${cantidad} unidades del producto "${datosCompletos.nombre}"\n\nCantidad anterior: ${cantidadAnterior}\nCantidad nueva: ${cantidadNueva}\n\nCódigo de barras: ${datosCompletos.codigoBarras}`,
         [
           {
             text: "Continuar",
@@ -291,6 +294,11 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
               setScanned(false);
               setScanning(false);
               setCantidadManual("");
+              setProductoEncontrado(null);
+              setScanned(false);
+              setScanning(false);
+              setCantidadManual("");
+
               setRackSugerido(null);
               setRacksDisponibles([]);
               alreadyHandledRef.current = false;
@@ -386,99 +394,46 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   }
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={styles.container}>
-        {/* Información del producto encontrado */}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={styles.container}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Información del producto encontrado */}
 
-        {productoEncontrado && (
-          <ScrollView>
-            <View style={styles.productInfoContainer}>
-              <Text style={styles.productTitle}>Producto Encontrado:</Text>
-              <Text style={styles.productName}>
-                {productoEncontrado.nombre}
-              </Text>
-              <Text style={styles.productCode}>
-                Código: {productoEncontrado.codigo}
-              </Text>
-              <Text style={styles.productStock}>
-                Stock actual: {productoEncontrado.cantidad}
-              </Text>
-              <Text style={styles.productBrand}>
-                Marca: {productoEncontrado.marcas?.nombre || "N/A"}
-              </Text>
-              <Text style={styles.barcodeInfo}>
-                Código de barras: {productoEncontrado.codigoBarras}
-              </Text>
+            {productoEncontrado && (
+              <ProductoEscaneadoForm
+                productoEncontrado={productoEncontrado}
+                onConfirmEntrada={handleConfirmEntrada}
+                onCancel={handleCancelProducto}
+                rackSugerido={rackSugerido}
+                racksDisponibles={racksDisponibles}
+                onRackChange={setRackSugerido}
+                updating={updating}
+              />
+            )}
 
-              <View style={styles.cantidadContainer}>
-                <Text style={styles.cantidadLabel}>
-                  Cantidad a agregar (detectada:{" "}
-                  {productoEncontrado.cantidadEscaneada}):
-                </Text>
-                <TextInput
-                  style={styles.cantidadInput}
-                  value={cantidadManual}
-                  onChangeText={setCantidadManual}
-                  keyboardType="numeric"
-                  placeholder="Cantidad"
-                />
-              </View>
-
-              <View style={styles.cantidadContainer}>
-                <Text style={styles.cantidadLabel}>
-                  Fecha de caducidad (opcional):
-                </Text>
-                <TextInput
-                  style={styles.cantidadInput}
-                  value={fechaCaducidadManual}
-                  onChangeText={setFechaCaducidadManual}
-                  placeholder="YYYY-MM-DD"
-                />
-              </View>
-
-              {rackSugerido ? (
-                <>
-                  <Text style={styles.productStock}>
-                    Rack sugerido: {rackSugerido.codigo_rack}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      // Abrir lista para elegir otro rack
-                      Alert.alert(
-                        "Seleccionar Rack",
-                        "Elige un rack disponible:",
-                        racksDisponibles.map((rack) => ({
-                          text: rack.codigo_rack,
-                          onPress: () => setRackSugerido(rack),
-                        }))
-                      );
-                    }}
-                    disabled={racksDisponibles.length === 0}
-                  >
-                    <Text style={{ color: "#007bff", marginTop: 8 }}>
-                      Cambiar rack sugerido
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <Text style={[styles.productStock, { color: "#e74c3c" }]}>
-                  No hay racks disponibles para esta marca.
-                </Text>
-              )}
-            </View>
+            {/* Cámara de escaneo con botón integrado */}
+            {!productoEncontrado && (
+              <CamaraEscaneo
+                onBarCodeScanned={handleBarCodeScanned}
+                scanning={scanning}
+                scanned={scanned}
+                onStartScanning={handleStartScanning}
+                onCancelScanning={handleCancelScanning}
+                loading={updating}
+              />
+            )}
           </ScrollView>
-        )}
-
-        {/* Cámara de escaneo */}
-        {!productoEncontrado && (
-          <CamaraEscaneo
-            onBarCodeScanned={handleBarCodeScanned}
-            scanning={scanning}
-            scanned={scanned}
-          />
-        )}
-
-        {/* Controles */}
+          {/* Controles
         <View style={styles.controlsContainer}>
           {!productoEncontrado && !scanning && !scanned && (
             <TouchableOpacity
@@ -535,23 +490,25 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
             </>
           )}
         </View>
+         */}
 
-        {updating && (
-          <View style={styles.updatingOverlay}>
-            <ActivityIndicator size="large" color="#023E8A" />
-            <Text style={styles.updatingText}>Procesando entrada...</Text>
-          </View>
-        )}
+          {updating && (
+            <View style={styles.updatingOverlay}>
+              <ActivityIndicator size="large" color="#023E8A" />
+              <Text style={styles.updatingText}>Procesando entrada...</Text>
+            </View>
+          )}
 
-        <CustomAlert
-          visible={alertVisible}
-          title={alertProps.title}
-          message={alertProps.message}
-          buttons={alertProps.buttons}
-          onClose={() => setAlertVisible(false)}
-        />
-      </View>
-    </TouchableWithoutFeedback>
+          <CustomAlert
+            visible={alertVisible}
+            title={alertProps.title}
+            message={alertProps.message}
+            buttons={alertProps.buttons}
+            onClose={() => setAlertVisible(false)}
+          />
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -559,6 +516,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
   centerContainer: {
     flex: 1,

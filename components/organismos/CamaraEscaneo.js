@@ -1,16 +1,36 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator } from "react-native";
 import { CameraView } from "expo-camera";
 
 const { width, height } = Dimensions.get("window");
 
-const CamaraEscaneo = ({ onBarCodeScanned, scanning, scanned }) => {
+const CamaraEscaneo = ({ 
+  onBarCodeScanned, 
+  scanning, 
+  scanned, 
+  onStartScanning, 
+  onCancelScanning,
+  loading = false 
+}) => {
   if (!scanning) {
     return (
       <View style={styles.cameraPlaceholder}>
         <Text style={styles.placeholderText}>
-          Presiona "Iniciar Escaneo" para activar la cámara
+          Presiona el botón para activar la cámara
         </Text>
+        
+        {/* Botón flotante centrado */}
+        <TouchableOpacity
+          style={styles.startScanButton}
+          onPress={onStartScanning}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Text style={styles.startScanButtonText}>INICIAR ESCANEO</Text>
+          )}
+        </TouchableOpacity>
       </View>
     );
   }
@@ -52,6 +72,14 @@ const CamaraEscaneo = ({ onBarCodeScanned, scanning, scanned }) => {
             Coloca el código de barras dentro del marco
           </Text>
         </View>
+
+        {/* Botón cancelar flotante */}
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={onCancelScanning}
+        >
+          <Text style={styles.cancelButtonText}>CANCELAR</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -75,12 +103,33 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#d0d0d0",
     borderStyle: "dashed",
+    position: "relative",
   },
   placeholderText: {
     fontSize: 16,
     color: "#666",
     textAlign: "center",
     paddingHorizontal: 20,
+    marginBottom: 30,
+  },
+  startScanButton: {
+    backgroundColor: "#023E8A",
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 30,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    minWidth: 150,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  startScanButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   overlay: {
     position: "absolute",
@@ -105,7 +154,7 @@ const styles = StyleSheet.create({
   },
   scanFrame: {
     width: width * 0.7,
-    height: width * 0.7 * 0.6, // Proporción rectangular para códigos de barras
+    height: width * 0.7 * 0.6,
     position: "relative",
     justifyContent: "center",
     alignItems: "center",
@@ -150,7 +199,7 @@ const styles = StyleSheet.create({
   },
   instructionsContainer: {
     position: "absolute",
-    bottom: 20,
+    bottom: 80,
     alignSelf: "center",
     width: "80%",
     alignItems: "center",
@@ -164,6 +213,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
+  },
+  cancelButton: {
+    position: "absolute",
+    bottom: 20,
+    alignSelf: "center",
+    backgroundColor: "rgba(220, 53, 69, 0.9)",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  cancelButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
 

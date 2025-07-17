@@ -24,7 +24,7 @@ const ProductosTemplate = ({ route, navigation }) => {
     const marcaNombre = marca.nombre?.toLowerCase();
     if (marcaNombre === "la costeña") {
       Alert.alert(
-        "¿Tu producto tiene caducidad en la etiqueta?",
+        "¿Tu etiqueta tiene caducidad y codigo de barras en la etiqueta?",
         "",
         [
           {

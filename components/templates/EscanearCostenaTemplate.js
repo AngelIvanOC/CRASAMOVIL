@@ -14,6 +14,7 @@ import { useProductos } from "../../hooks/useProductos";
 import { useRacks } from "../../hooks/useRacks";
 import CamaraCostena from "../organismos/CamaraCostena"; // Componente que crearemos después
 import CustomAlert from "../atomos/Alertas/CustomAlert";
+import ProductoEscaneadoForm from "../organismos/ProductoEscaneadoForm";
 
 const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   const [permission, requestPermission] = useCameraPermissions();
@@ -149,25 +150,25 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       Alert.alert("Error", "No se pudo procesar el producto detectado");
     }
   };
-  const handleConfirmEntrada = async () => {
-    if (!productoEncontrado) return;
+  const handleConfirmEntrada = (datosCompletos, cantidadFinal) => {
+    /*if (!productoEncontrado) return;
 
     const cantidadFinal = parseInt(cantidadManual) || 1;
 
     if (cantidadFinal <= 0) {
       Alert.alert("Error", "La cantidad debe ser mayor a 0");
       return;
-    }
+    }*/
 
     Alert.alert(
       "Confirmar Entrada",
-      `¿Confirmas la entrada de ${cantidadFinal} unidades del producto "${productoEncontrado.nombre}"?`,
+      `¿Confirmas la entrada de ${cantidadFinal} unidades del producto "${datosCompletos.nombre}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
           text: "Confirmar",
           onPress: async () => {
-            await procesarEntrada(cantidadFinal);
+            await procesarEntrada(datosCompletos, cantidadFinal);
           },
         },
       ]
@@ -176,20 +177,20 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
 
   // En EscanearCostenaTemplate.js, actualiza procesarEntrada:
 
-  const procesarEntrada = async (cantidad) => {
+  const procesarEntrada = async (datosCompletos, cantidad) => {
     try {
       setUpdating(true);
       await procesarEntradaCompleta(
-        productoEncontrado.id,
+        datosCompletos.id,
         cantidad,
-        productoEncontrado.codigoBarras,
+        datosCompletos.codigoBarras,
         rackSugerido?.id || null,
-        productoEncontrado.fechaCaducidad
+        datosCompletos.fechaCaducidad
       );
 
       Alert.alert(
         "¡Entrada Registrada!",
-        `Se han agregado ${cantidad} unidades del producto "${productoEncontrado.nombre}"`,
+        `Se han agregado ${cantidad} unidades del producto "${datosCompletos.nombre}"`,
         [
           {
             text: "Continuar",
@@ -285,52 +286,18 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       {/* Información del producto encontrado */}
 
       {productoEncontrado && (
-        <View style={styles.productInfoContainer}>
-          <Text style={styles.productTitle}>PRODUCTO JUMEX:</Text>
-          <Text style={styles.productName}>{productoEncontrado.nombre}</Text>
-          <Text style={styles.productCode}>
-            Código: {productoEncontrado.codigoBarras}
-          </Text>
-          <Text style={styles.productCode}>
-            Código: {productoEncontrado.codigo}
-          </Text>
-          <Text style={styles.productStock}>
-            Stock actual: {productoEncontrado.cantidad}
-          </Text>
-
-          {/* Mostrar fecha de caducidad si existe */}
-          {productoEncontrado.fechaCaducidad && (
-            <Text style={styles.productInfo}>
-              Fecha expiración:{" "}
-              {productoEncontrado.fechaCaducidad.toLocaleDateString()}
-            </Text>
-          )}
-
-          {/* Mostrar cantidad detectada */}
-          <Text style={styles.productInfo}>
-            Cantidad detectada: {productoEncontrado.cantidadEscaneada}
-          </Text>
-
-          <View style={styles.cantidadContainer}>
-            <Text style={styles.cantidadLabel}>Cantidad a agregar:</Text>
-            <TextInput
-              style={styles.cantidadInput}
-              value={cantidadManual}
-              onChangeText={setCantidadManual}
-              keyboardType="numeric"
-              placeholder="Cantidad"
-            />
-          </View>
-
-          {rackSugerido && (
-            <Text style={styles.productInfo}>
-              Rack sugerido: {rackSugerido.codigo_rack}
-            </Text>
-          )}
-        </View>
+        <ProductoEscaneadoForm
+          productoEncontrado={productoEncontrado}
+          onConfirmEntrada={handleConfirmEntrada}
+          onCancel={handleCancelProducto}
+          rackSugerido={rackSugerido}
+          racksDisponibles={racksDisponibles}
+          onRackChange={setRackSugerido}
+          updating={updating}
+        />
       )}
 
-      {/* Controles */}
+      {/* Controles 
       <View style={styles.controlsContainer}>
         {productoEncontrado && (
           <>
@@ -356,6 +323,7 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           </>
         )}
       </View>
+      */}
 
       {updating && (
         <View style={styles.updatingOverlay}>
