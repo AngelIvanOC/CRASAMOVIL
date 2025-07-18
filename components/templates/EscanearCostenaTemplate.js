@@ -48,6 +48,16 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     }
   }, [permission]);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      if (marca?.id) {
+        fetchProductos(marca.id); // recarga productos al volver
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, marca?.id]);
+
   const showAlert = ({ title, message, buttons = [] }) => {
     setAlertProps({ title, message, buttons });
     setAlertVisible(true);
@@ -102,6 +112,24 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
         showAlert({
           title: "Producto No Encontrado",
           message: `No se encontró un producto con el código: ${productoData.codigo}`,
+          buttons: [
+            {
+              text: "Cancelar",
+              onPress: () => setAlertVisible(false),
+              style: "cancel",
+            },
+            {
+              text: "Agregar Producto",
+              onPress: () => {
+                setAlertVisible(false);
+                navigation.navigate("AgregarProducto", {
+                  codigoproducto: productoData.codigo,
+                  nombre: productoData.descripcion,
+                  marca,
+                });
+              },
+            },
+          ],
         });
         return;
       }

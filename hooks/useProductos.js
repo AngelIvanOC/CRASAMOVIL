@@ -125,6 +125,65 @@ export const useProductos = (marcaId = null) => {
     }
   };
 
+  // Nueva función para agregar un producto
+  const agregarProducto = async (datosProducto) => {
+    try {
+      setError(null);
+
+      // Verificar si el código ya existe
+      const { data: existingProduct, error: checkError } = await supabase
+        .from("productos")
+        .select("id, codigo")
+        .eq("codigo", datosProducto.codigo)
+        .single();
+
+      if (checkError && checkError.code !== "PGRST116") {
+        // PGRST116 es el código para "no encontrado"
+        throw checkError;
+      }
+
+      if (existingProduct) {
+        throw new Error("Ya existe un producto con ese código");
+      }
+
+      // Verificar si el nombre ya existe para esta marca
+      const { data: existingName, error: nameError } = await supabase
+        .from("productos")
+        .select("id, nombre")
+        .eq("nombre", datosProducto.nombre)
+        .eq("marca_id", datosProducto.marca_id)
+        .single();
+
+      if (nameError && nameError.code !== "PGRST116") {
+        throw nameError;
+      }
+
+      if (existingName) {
+        throw new Error("Ya existe un producto con ese nombre en esta marca");
+      }
+
+      // Insertar el nuevo producto
+      const { data, error } = await supabase
+        .from("productos")
+        .insert([datosProducto])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      // Actualizar la lista de productos
+      await fetchProductos();
+
+      return data;
+    } catch (error) {
+      console.error("Error agregando producto:", error);
+      setError(error.message);
+      throw error;
+    }
+  };
+
   // Nueva función para actualizar la cantidad de un producto
 
   // Función completa para procesar una entrada
@@ -351,6 +410,7 @@ export const useProductos = (marcaId = null) => {
     error,
     fetchProductos,
     searchProductos,
+    agregarProducto,
     procesarEntradaCompleta,
     procesarSalidaCompleta,
     obtenerFechaCaducidadDesdeCodigo,

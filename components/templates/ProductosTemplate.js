@@ -11,6 +11,7 @@ import {
 import { useProductos } from "../../hooks/useProductos";
 import CardProducto from "../atomos/CardProducto";
 import BuscadorConStats from "../moleculas/BuscadorConStats";
+import { FontAwesome } from "@expo/vector-icons";
 
 const ProductosTemplate = ({ route, navigation }) => {
   const { marca } = route.params;
@@ -19,6 +20,11 @@ const ProductosTemplate = ({ route, navigation }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef(null);
+
+  // ✅ Función para manejar agregar producto
+  const handleAgregarProducto = () => {
+    navigation.navigate("AgregarProducto", { marca });
+  };
 
   const handleEntradaPress = () => {
     const marcaNombre = marca.nombre?.toLowerCase();
@@ -194,8 +200,18 @@ const ProductosTemplate = ({ route, navigation }) => {
         keyboardShouldPersistTaps="handled"
       />
 
-      <TouchableOpacity style={styles.addButton} onPress={handleEntradaPress}>
-        <Text style={styles.addButtonText}>+</Text>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={handleAgregarProducto}
+      >
+        <Text style={styles.addButtonText}>
+          <FontAwesome name="plus" size={24} />
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.addButton2} onPress={handleEntradaPress}>
+        <Text style={styles.addButtonText}>
+          <FontAwesome name="barcode" size={24} />
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -258,6 +274,25 @@ const styles = StyleSheet.create({
   },
 
   addButton: {
+    position: "absolute",
+    bottom: 100,
+    right: 30,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#023E8A",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  addButton2: {
     position: "absolute",
     bottom: 30,
     right: 30,

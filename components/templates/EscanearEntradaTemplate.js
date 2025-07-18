@@ -57,6 +57,16 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     }
   }, [permission, marca?.id]);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      if (marca?.id) {
+        fetchProductos(marca.id); // recarga productos al volver
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, marca?.id]);
+
   const showAlert = ({ title, message, buttons = [] }) => {
     setAlertProps({ title, message, buttons });
     setAlertVisible(true);
@@ -208,6 +218,23 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
         showAlert({
           title: "Producto No Encontrado",
           message: `No se encontró un producto con el código: ${productCode}`,
+          buttons: [
+            {
+              text: "Cancelar",
+              onPress: () => setAlertVisible(false),
+              style: "cancel",
+            },
+            {
+              text: "Agregar Producto",
+              onPress: () => {
+                setAlertVisible(false);
+                navigation.navigate("AgregarProducto", {
+                  codigoproducto: productCode,
+                  marca,
+                });
+              },
+            },
+          ],
         });
       }
     } catch (error) {

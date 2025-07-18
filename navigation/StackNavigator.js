@@ -11,6 +11,7 @@ import EscanearVentaScreen from "../screens/EscanearVentaScreen";
 import EscanearEntradaScreen from "../screens/EscanearEntradaScreen";
 import HistorialEntradasScreen from "../screens/HistorialEntradaScreen";
 import EscanearCostenaScreen from "../screens/EscanearCostenaScreen";
+import AgregarProductoScreen from "../screens/AgregarProductoScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -58,6 +59,7 @@ export default function StackNavigator() {
           },
         }}
       />
+
       {/* Pantalla de productos de una marca específica */}
       <Stack.Screen
         name="Productos"
@@ -67,6 +69,12 @@ export default function StackNavigator() {
             // El título se configurará dinámicamente en ProductosTemplate
           }
         }
+      />
+
+      <Stack.Screen
+        name="AgregarProducto"
+        component={AgregarProductoScreen}
+        options={{ title: "Agregar Producto" }} // El header se maneja en el template
       />
 
       <Stack.Screen
