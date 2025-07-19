@@ -89,29 +89,29 @@ const EscanearVentaTemplate = ({
     try {
       console.log("[DEBUG] Buscando código de barras en cajas...");
 
-      const { data: cajaData, error } = await supabase
-        .from("cajas")
+      const { data: pisoData, error } = await supabase
+        .from("piso") // ✅ Cambiar de "cajas" a "piso"
         .select(
           `
-        producto_id,
-        productos (
-          id,
-          codigo
-        )
-      `
+    producto_id,
+    productos (
+      id,
+      codigo
+    )
+  `
         )
         .eq("codigo_barras", scannedCode)
         .single();
 
-      console.log("[DEBUG] Resultado consulta cajas:", { cajaData, error });
+      console.log("[DEBUG] Resultado consulta cajas:", { pisoData, error });
 
       if (error) {
         console.error("[ERROR] Supabase query error:", error);
         throw error;
       }
 
-      if (!cajaData || !cajaData.productos) {
-        console.log("[DEBUG] No se encontró el código de barras en cajas");
+      if (!pisoData || !pisoData.productos) {
+        console.log("[DEBUG] No se encontró el código de barras en piso");
         Alert.alert(
           "Código no registrado",
           "Este código de barras no está registrado en el sistema.",
@@ -123,7 +123,7 @@ const EscanearVentaTemplate = ({
         return;
       }
 
-      const scannedProductCode = String(cajaData.productos.codigo).trim();
+      const scannedProductCode = String(pisoData.productos.codigo).trim();
       const expectedProductCode = String(productCode || "").trim();
 
       console.log("[DEBUG] Comparando códigos:", {

@@ -12,7 +12,10 @@ export const useRacks = () => {
     const { data, error } = await supabase
       .from("racks")
       .select("*")
-      .eq("ocupado", false);
+      .eq("ocupado", false)
+      .order("nivel", { ascending: true }) // A < B < C
+      .order("posicion", { ascending: true }) // 1 < 2 < ... < 40
+      .order("lado", { ascending: true }); // 1 < 2
 
     setLoading(false);
 

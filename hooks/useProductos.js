@@ -255,11 +255,11 @@ export const useProductos = (marcaId = null) => {
     detalleId = null
   ) {
     let query = supabase
-      .from("cajas")
+      .from("piso")
       .select("*")
       .eq("producto_id", productoId)
       .gt("cantidad", 0)
-      .order("fecha_entrada", { ascending: true });
+      .order("fecha_caducidad", { ascending: true });
 
     if (codigoBarras) {
       query = query.eq("codigo_barras", codigoBarras.trim());
@@ -301,7 +301,7 @@ export const useProductos = (marcaId = null) => {
       const aRestar = Math.min(cantidadDisponible, cantidadRestante);
 
       await supabase
-        .from("cajas")
+        .from("piso")
         .update({ cantidad: cantidadDisponible - aRestar })
         .eq("id", lote.id);
 
