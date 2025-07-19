@@ -132,8 +132,16 @@ const ProductosTemplate = ({ route, navigation }) => {
     navigation.navigate("HistorialEntradas", { producto });
   };
 
+  const handlePisoPress = (producto) => {
+    navigation.navigate("Piso", { producto });
+  };
+
   const renderItem = ({ item }) => (
-    <CardProducto producto={item} onPress={handleProductoPress} />
+    <CardProducto
+      producto={item}
+      onHistorialPress={handleProductoPress}
+      onPisoPress={handlePisoPress}
+    />
   );
 
   const renderEmpty = () => (

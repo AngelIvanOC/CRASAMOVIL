@@ -1,13 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
-import { FontAwesome6 } from "@expo/vector-icons";
-import { supabase } from "../../supabase/supabase";
+import { View, Text, StyleSheet } from "react-native";
 
-const HistorialEntradaCard = ({
-  item,
-  mostrarNombreProducto = false,
-  onMoverAPiso,
-}) => {
+const CardPiso = ({ item, mostrarNombreProducto = false }) => {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("es-ES", {
@@ -41,42 +35,6 @@ const HistorialEntradaCard = ({
     return "Vigente";
   };
 
-  const moverAPiso = async () => {
-    try {
-      // Inicia la transacción
-      const { data, error } = await supabase.rpc("mover_caja_a_piso", {
-        caja_id: item.id,
-      });
-
-      if (error) {
-        console.error("Error al mover a piso:", error);
-        Alert.alert("Error", "No se pudo mover el producto al piso");
-        return;
-      }
-
-      Alert.alert("Éxito", "Producto movido al piso correctamente");
-
-      // Callback para actualizar la lista en el componente padre
-      if (onMoverAPiso) {
-        onMoverAPiso(item.id);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      Alert.alert("Error", "Ocurrió un error inesperado");
-    }
-  };
-
-  const confirmarMover = () => {
-    Alert.alert(
-      "Confirmar",
-      `¿Estás seguro de que quieres mover ${item.cantidad} unidades al piso?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Confirmar", onPress: moverAPiso },
-      ]
-    );
-  };
-
   const statusColor = getStatusColor(item.fecha_caducidad);
   const statusText = getStatusText(item.fecha_caducidad);
 
@@ -95,20 +53,14 @@ const HistorialEntradaCard = ({
         Cantidad: <Text style={styles.value}>{item.cantidad}</Text>
       </Text>
       <Text style={styles.label}>
-        Codigo de barras: <Text style={styles.value}>{item.codigo_barras}</Text>
+        Ubicación: <Text style={styles.value}>Piso</Text>
       </Text>
       <Text style={styles.label}>
-        Rack:{" "}
-        <Text style={styles.value}>{item.racks?.codigo_rack || "N/A"}</Text>
+        Codigo de barras: <Text style={styles.value}>{item.codigo_barras}</Text>
       </Text>
       <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
         <Text style={styles.statusText}>{statusText}</Text>
       </View>
-
-      <TouchableOpacity style={styles.moverButton} onPress={confirmarMover}>
-        <Text style={styles.moverText}>Mover a piso</Text>
-        <FontAwesome6 name="truck-ramp-box" size={24} color="#023E8A" />
-      </TouchableOpacity>
     </View>
   );
 };
@@ -148,22 +100,6 @@ const styles = StyleSheet.create({
     color: "#1A202C",
     marginBottom: 6,
   },
-  moverButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 8,
-    padding: 8,
-    backgroundColor: "#F7FAFC",
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  moverText: {
-    fontSize: 13,
-    color: "#4A5568",
-    fontWeight: "500",
-  },
 });
 
-export default HistorialEntradaCard;
+export default CardPiso;

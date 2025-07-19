@@ -1,11 +1,12 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { FontAwesome, FontAwesome6 } from "@expo/vector-icons";
 
-const CardProducto = ({ producto, onPress }) => {
+const CardProducto = ({ producto, onHistorialPress, onPisoPress }) => {
   const cajasEsArray = Array.isArray(producto.cajas);
 
   return (
-    <TouchableOpacity style={styles.card} onPress={() => onPress(producto)}>
+    <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.codigo}>#{producto.codigo}</Text>
         <Text style={styles.rack}>
@@ -41,9 +42,25 @@ const CardProducto = ({ producto, onPress }) => {
                 : producto.cajas || 0}
             </Text>
           </View>
+
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => onHistorialPress(producto)}
+            >
+              <FontAwesome name="cube" size={20} color="#e67e22" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => onPisoPress(producto)}
+            >
+              <FontAwesome6 name="truck-ramp-box" size={20} color="#023E8A" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -98,7 +115,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 25,
+    justifyContent: "space-between",
   },
   cantidadContainer: {
     alignItems: "center",
@@ -113,18 +130,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#2ecc71",
   },
-  cajasContainer: {
-    alignItems: "center",
+  actionsContainer: {
+    flexDirection: "row",
+    gap: 12,
   },
-  cajasLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 2,
-  },
-  cajas: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#e67e22",
+  actionButton: {
+    padding: 8,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
 });
 

@@ -6,22 +6,21 @@ import {
   FlatList,
   ActivityIndicator,
 } from "react-native";
-import HistorialEntradaCard from "../atomos/HistorialEntradaCard";
+import CardPiso from "../atomos/CardPiso";
 
-const HistorialEntradaTemplate = ({
+const PisoTemplate = ({
   historial,
   loading,
   producto,
-  onMoverAPiso,
 }) => {
   const renderItem = ({ item }) => (
-    <HistorialEntradaCard item={item} onMoverAPiso={onMoverAPiso} />
+    <CardPiso item={item} />
   );
 
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>
-        No hay historial de entradas para este producto
+        No hay productos en piso para este producto
       </Text>
     </View>
   );
@@ -30,7 +29,7 @@ const HistorialEntradaTemplate = ({
     <View style={styles.headerContainer}>
       <Text style={styles.productName}>{producto.nombre}</Text>
       <Text style={styles.subtitle}>
-        {historial.length} entrada{historial.length !== 1 ? "s" : ""} en cajas
+        {historial.length} entrada{historial.length !== 1 ? "s" : ""} en piso
       </Text>
     </View>
   );
@@ -116,4 +115,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HistorialEntradaTemplate;
+export default PisoTemplate;

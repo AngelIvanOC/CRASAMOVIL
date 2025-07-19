@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabase/supabase";
-import HistorialEntradaTemplate from "../components/templates/HistorialEntradaTemplate";
+import PisoTemplate from "../components/templates/PisoTemplate";
 
-const HistorialEntradasScreen = ({ route }) => {
+const PisoScreen = ({ route }) => {
   const { producto } = route.params;
   const [historial, setHistorial] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,11 +13,10 @@ const HistorialEntradasScreen = ({ route }) => {
 
   const cargarHistorial = async () => {
     const { data, error } = await supabase
-      .from("cajas")
+      .from("piso")
       .select(
         `
-          id, cantidad, fecha_caducidad, codigo_barras, rack_id,
-          racks (codigo_rack)
+          id, cantidad, fecha_caducidad, codigo_barras
         `
       )
       .eq("producto_id", producto.id)
@@ -27,19 +26,13 @@ const HistorialEntradasScreen = ({ route }) => {
     setLoading(false);
   };
 
-  const handleMoverAPiso = (cajaId) => {
-    // Remueve la caja de la lista después de moverla
-    setHistorial((prev) => prev.filter((item) => item.id !== cajaId));
-  };
-
   return (
-    <HistorialEntradaTemplate
+    <PisoTemplate
       historial={historial}
       loading={loading}
       producto={producto}
-      onMoverAPiso={handleMoverAPiso}
     />
   );
 };
 
-export default HistorialEntradasScreen;
+export default PisoScreen;
