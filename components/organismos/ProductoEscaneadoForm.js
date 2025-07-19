@@ -73,7 +73,7 @@ const ProductoEscaneadoForm = ({
       "Seleccionar Rack",
       "Elige un rack disponible:",
       racksDisponibles.map((rack) => ({
-        text: `${rack.codigo_rack} - ${rack.descripcion || "Sin descripción"}`,
+        text: `${rack.codigo_rack}`,
         onPress: () => onRackChange(rack),
       }))
     );
@@ -107,7 +107,7 @@ const ProductoEscaneadoForm = ({
           />
         </View>
 
-        <View style={styles.inputContainer}>
+        {/*<View style={styles.inputContainer}>
           <Text style={styles.label}>Stock Actual:</Text>
           <TextInput
             style={[styles.input, styles.readOnlyInput]}
@@ -115,9 +115,9 @@ const ProductoEscaneadoForm = ({
             editable={false}
             placeholder="Stock actual"
           />
-        </View>
+        </View>*/}
 
-        <View style={styles.inputContainer}>
+        {/*<View style={styles.inputContainer}>
           <Text style={styles.label}>Marca:</Text>
           <TextInput
             style={[styles.input, styles.readOnlyInput]}
@@ -125,7 +125,7 @@ const ProductoEscaneadoForm = ({
             editable={false}
             placeholder="Marca"
           />
-        </View>
+        </View>*/}
 
         {/* Campos EDITABLES */}
         <View style={styles.inputContainer}>
@@ -136,21 +136,6 @@ const ProductoEscaneadoForm = ({
             onChangeText={setCodigoBarrasManual}
             placeholder="Código de barras escaneado"
             multiline={false}
-          />
-        </View>
-
-        {/* CAMPO ÚNICO DE CANTIDAD */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Cantidad a Agregar al Inventario:</Text>
-          <Text style={styles.helperText}>
-            Cantidad detectada: {productoEncontrado.cantidadEscaneada || 1}
-          </Text>
-          <TextInput
-            style={[styles.input, styles.highlightedInput]}
-            value={cantidadManual}
-            onChangeText={setCantidadManual}
-            placeholder="Cantidad a agregar"
-            keyboardType="numeric"
           />
         </View>
 
@@ -166,28 +151,41 @@ const ProductoEscaneadoForm = ({
 
         {/* Selección de Rack */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Rack Asignado:</Text>
+          <Text style={styles.label}>Ingresar en el Rack:</Text>
           <View style={styles.rackContainer}>
             <TextInput
               style={[styles.input, styles.readOnlyInput, { flex: 1 }]}
               value={
                 rackSugerido
-                  ? `${rackSugerido.codigo_rack} - ${
-                      rackSugerido.descripcion || "Sin descripción"
-                    }`
+                  ? `${rackSugerido.codigo_rack}`
                   : "No hay racks disponibles"
               }
               editable={false}
               placeholder="Rack asignado"
             />
-            <TouchableOpacity
+            {/*<TouchableOpacity
               style={styles.changeRackButton}
               onPress={handleRackSelection}
               disabled={racksDisponibles.length === 0}
             >
               <Text style={styles.changeRackButtonText}>Cambiar</Text>
-            </TouchableOpacity>
+            </TouchableOpacity>*/}
           </View>
+        </View>
+
+        {/* CAMPO ÚNICO DE CANTIDAD */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Cantidad a Agregar al Inventario:</Text>
+          <Text style={styles.helperText}>
+            Cantidad detectada: {productoEncontrado.cantidadEscaneada || 1}
+          </Text>
+          <TextInput
+            style={[styles.input, styles.highlightedInput]}
+            value={cantidadManual}
+            onChangeText={setCantidadManual}
+            placeholder="Cantidad a agregar"
+            keyboardType="numeric"
+          />
         </View>
 
         {/* Resumen de la operación */}

@@ -7,13 +7,12 @@ export const useRacks = () => {
   const [loading, setLoading] = useState(false);
 
   // Traer racks disponibles para una marca específica
-  const obtenerRacksDisponiblesPorMarca = async (marcaId) => {
+  const obtenerRacksDisponiblesPorMarca = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("racks")
       .select("*")
-      .eq("ocupado", false)
-      .eq("marca_id", marcaId);
+      .eq("ocupado", false);
 
     setLoading(false);
 

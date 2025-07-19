@@ -61,7 +61,7 @@ const EscanearVentaTemplate = ({
   };
 
   const handleBarCodeScanned = async ({ data }) => {
-    if (data.length < 13) {
+    if (data.length < 10) {
       console.log("Código ignorado por longitud:", data);
       return;
     }
@@ -281,9 +281,18 @@ const EscanearVentaTemplate = ({
         onBarCodeScanned={handleBarCodeScanned}
         scanning={scanning}
         scanned={scanned}
+        onStartScanning={() => {
+          setScanning(true);
+          setScanned(false);
+        }}
+        onCancelScanning={() => {
+          setScanning(false);
+          setScanned(false);
+        }}
+        loading={updating}
       />
 
-      {/* Controles */}
+      {/* Controles 
       <View style={styles.controlsContainer}>
         {!scanning && !scanned && (
           <TouchableOpacity
@@ -333,7 +342,7 @@ const EscanearVentaTemplate = ({
           <Text style={styles.manualButtonText}>Completar Manualmente</Text>
         </TouchableOpacity>
       </View>
-
+*/}
       {updating && (
         <View style={styles.updatingOverlay}>
           <ActivityIndicator size="large" color="#023E8A" />

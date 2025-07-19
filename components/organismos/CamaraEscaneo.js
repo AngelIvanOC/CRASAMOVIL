@@ -1,16 +1,23 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import { CameraView } from "expo-camera";
 
 const { width, height } = Dimensions.get("window");
 
-const CamaraEscaneo = ({ 
-  onBarCodeScanned, 
-  scanning, 
-  scanned, 
-  onStartScanning, 
+const CamaraEscaneo = ({
+  onBarCodeScanned,
+  scanning,
+  scanned,
+  onStartScanning,
   onCancelScanning,
-  loading = false 
+  loading = false,
 }) => {
   if (!scanning) {
     return (
@@ -18,7 +25,7 @@ const CamaraEscaneo = ({
         <Text style={styles.placeholderText}>
           Presiona el botón para activar la cámara
         </Text>
-        
+
         {/* Botón flotante centrado */}
         <TouchableOpacity
           style={styles.startScanButton}
