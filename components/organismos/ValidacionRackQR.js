@@ -1,0 +1,225 @@
+// components/organismos/ValidacionRackQR.js
+import React, { useState, useRef, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { CameraView } from "expo-camera";
+import { Ionicons } from "@expo/vector-icons";
+
+const ValidacionRackQR = ({
+  onQRRackEscaneado,
+  rackEsperado,
+  onCancel,
+  resetScan = false,
+}) => {
+  const [scanned, setScanned] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const cameraRef = useRef(null);
+  const alreadyHandledRef = useRef(false);
+
+  // Efecto para resetear el estado cuando el padre lo indique
+  useEffect(() => {
+    if (resetScan) {
+      console.log("Reseteando estado del scanner QR");
+      setScanned(false);
+      setProcessing(false);
+      alreadyHandledRef.current = false;
+    }
+  }, [resetScan]);
+
+  const handleBarCodeScanned = ({ type, data }) => {
+    // Verificar si ya se está procesando un escaneo
+    if (scanned || processing || alreadyHandledRef.current) {
+      console.log("QR ignorado - ya procesando");
+      return;
+    }
+
+    console.log("Procesando QR escaneado:", data);
+
+    // Marcar como procesando
+    alreadyHandledRef.current = true;
+    setScanned(true);
+    setProcessing(true);
+
+    // Procesar el código QR
+    onQRRackEscaneado(data);
+  };
+
+  const handleRetry = () => {
+    // Solo permitir retry si el componente padre lo permite
+    setScanned(false);
+    setProcessing(false);
+    alreadyHandledRef.current = false;
+  };
+
+  const handleCancel = () => {
+    // Limpiar estados antes de cancelar
+    setScanned(false);
+    setProcessing(false);
+    alreadyHandledRef.current = false;
+    onCancel();
+  };
+
+  return (
+    <View style={styles.overlay}>
+      <View style={styles.container}>
+        {/* Solo mostrar cámara si no se ha escaneado exitosamente */}
+        {!scanned && (
+          <CameraView
+            style={styles.camera}
+            onBarcodeScanned={handleBarCodeScanned}
+            barcodeScannerSettings={{
+              barcodeTypes: ["qr"],
+            }}
+            ref={cameraRef}
+          />
+        )}
+
+        {/* Mostrar pantalla de procesando cuando se escaneó */}
+        {scanned && (
+          <View style={styles.processingContainer}>
+            <Text style={styles.processingText}>Validando código QR...</Text>
+          </View>
+        )}
+
+        {!scanned && (
+          <>
+            <View style={styles.instructions}>
+              <Text style={styles.instructionTitle}>
+                Escanea el código QR del rack:
+              </Text>
+              <Text style={styles.rackCode}>{rackEsperado?.codigo_rack}</Text>
+            </View>
+
+            {/* Marco de escaneo QR */}
+            <View style={styles.scanFrame}>
+              <View style={[styles.corner, styles.topLeft]} />
+              <View style={[styles.corner, styles.topRight]} />
+              <View style={[styles.corner, styles.bottomLeft]} />
+              <View style={[styles.corner, styles.bottomRight]} />
+            </View>
+          </>
+        )}
+
+        {/* Botón de cancelar */}
+        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+          <Ionicons name="close" size={24} color="white" />
+          <Text style={styles.cancelButtonText}>Cancelar</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "black",
+    zIndex: 1000,
+  },
+  container: {
+    flex: 1,
+    position: "relative",
+  },
+  camera: {
+    flex: 1,
+  },
+  processingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+  },
+  processingText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  instructions: {
+    position: "absolute",
+    top: "20%",
+    left: 20,
+    right: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    padding: 20,
+    borderRadius: 10,
+    zIndex: 10,
+  },
+  instructionTitle: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  rackCode: {
+    color: "#023E8A",
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    backgroundColor: "white",
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  scanFrame: {
+    position: "absolute",
+    top: "45%",
+    left: "25%",
+    width: "50%",
+    height: "20%",
+    zIndex: 10,
+  },
+  corner: {
+    position: "absolute",
+    width: 30,
+    height: 30,
+    borderColor: "#023E8A",
+  },
+  topLeft: {
+    top: -2,
+    left: -2,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+  },
+  topRight: {
+    top: -2,
+    right: -2,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+  },
+  bottomLeft: {
+    bottom: -2,
+    left: -2,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+  },
+  bottomRight: {
+    bottom: -2,
+    right: -2,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+  },
+  cancelButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(220, 53, 69, 0.8)",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 25,
+    zIndex: 15,
+  },
+  cancelButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    marginLeft: 5,
+  },
+});
+
+export default ValidacionRackQR;

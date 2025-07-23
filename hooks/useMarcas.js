@@ -14,7 +14,6 @@ export const useMarcas = () => {
       const { data, error } = await supabase
         .from("marcas")
         .select("*")
-        .order("nombre", { ascending: true });
 
       if (error) {
         throw error;

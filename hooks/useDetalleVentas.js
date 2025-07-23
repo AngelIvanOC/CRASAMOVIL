@@ -222,6 +222,25 @@ export const useDetalleVentas = (ventaId) => {
     }
   };
 
+  const getSugerenciaPiso = async (productoId) => {
+    try {
+      const { data: cajasPiso, error } = await supabase
+        .from("piso")
+        .select("*")
+        .eq("producto_id", productoId)
+        .gt("cantidad", 0)
+        .order("fecha_caducidad", { ascending: true })
+        .limit(1);
+
+      if (error) throw error;
+
+      return cajasPiso && cajasPiso.length > 0 ? cajasPiso[0] : null;
+    } catch (error) {
+      console.error("Error obteniendo sugerencia de piso:", error);
+      return null;
+    }
+  };
+
   const getSugerenciaRack = async (productoId) => {
     try {
       const { data: cajas, error } = await supabase
@@ -265,5 +284,6 @@ export const useDetalleVentas = (ventaId) => {
     updateDetalle,
     updateEstadoDetalle,
     getSugerenciaRack,
+    getSugerenciaPiso,
   };
 };

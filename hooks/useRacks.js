@@ -14,8 +14,8 @@ export const useRacks = () => {
       .select("*")
       .eq("ocupado", false)
       .order("nivel", { ascending: true }) // A < B < C
-      .order("posicion", { ascending: true }) // 1 < 2 < ... < 40
-      .order("lado", { ascending: true }); // 1 < 2
+      .order("lado", { ascending: true }) // 1 < 2
+      .order("posicion", { ascending: true }); // 1 < 2 < ... < 40
 
     setLoading(false);
 
@@ -24,7 +24,21 @@ export const useRacks = () => {
       return [];
     }
 
-    return data;
+    // Ordenar por posición numéricamente ya que está guardado como text
+    const racksOrdenados = data?.sort((a, b) => {
+      // Primero por nivel
+      if (a.nivel !== b.nivel) {
+        return a.nivel.localeCompare(b.nivel);
+      }
+      // Luego por lado
+      if (a.lado !== b.lado) {
+        return parseInt(a.lado) - parseInt(b.lado);
+      }
+      // Finalmente por posición (convertir a número)
+      return parseInt(a.posicion) - parseInt(b.posicion);
+    });
+
+    return racksOrdenados || [];
   };
 
   return {

@@ -15,6 +15,7 @@ import { useRacks } from "../../hooks/useRacks";
 import CamaraCostena from "../organismos/CamaraCostena"; // Componente que crearemos después
 import CustomAlert from "../atomos/Alertas/CustomAlert";
 import ProductoEscaneadoForm from "../organismos/ProductoEscaneadoForm";
+import ValidacionRackQR from "../organismos/ValidacionRackQR"; // Componente que crearemos después
 
 const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   const [permission, requestPermission] = useCameraPermissions();
@@ -23,6 +24,10 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   const [cantidadManual, setCantidadManual] = useState("1");
   const [racksDisponibles, setRacksDisponibles] = useState([]);
   const [rackSugerido, setRackSugerido] = useState(null);
+  const [esperandoValidacionRack, setEsperandoValidacionRack] = useState(false);
+  const [datosParaConfirmar, setDatosParaConfirmar] = useState(null);
+
+  
   const { obtenerRacksDisponiblesPorMarca } = useRacks();
   const {
     productos,
@@ -80,6 +85,29 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
 
   // En EscanearCostenaTemplate.js, actualiza handleProductoDetectado
   const handleProductoDetectado = async (productoData) => {
+    if (!productoData.codigo) {
+      const racks = await obtenerRacksDisponiblesPorMarca(marca.id);
+      setRacksDisponibles(racks);
+      setRackSugerido(racks.length > 0 ? racks[0] : null);
+
+      // Producto temporal para entrada manual
+      setProductoEncontrado({
+        id: null, // Sin ID porque no existe en BD
+        codigo: "", // Código vacío para que el usuario lo llene
+        nombre: "", // Nombre vacío
+        cantidad: 0, // Stock actual 0
+        marca_id: marca.id,
+        cantidadEscaneada: productoData.cantidad || 1,
+        codigoBarras: productoData.codigoBarras || "",
+        fechaCaducidad: productoData.fechaCaducidad,
+        datosOCR: productoData,
+        esEntradaManual: true, // Flag para identificar entrada manual
+      });
+
+      setCantidadManual(productoData.cantidad?.toString() || "1");
+      return;
+    }
+
     try {
       // Buscar el producto en la base de datos por código
       const producto = productos.find(
@@ -188,7 +216,10 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       return;
     }*/
 
-    Alert.alert(
+    setDatosParaConfirmar({ datosCompletos, cantidadFinal });
+    setEsperandoValidacionRack(true);
+
+    /*Alert.alert(
       "Confirmar Entrada",
       `¿Confirmas la entrada de ${cantidadFinal} unidades del producto "${datosCompletos.nombre}"?`,
       [
@@ -200,7 +231,55 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           },
         },
       ]
-    );
+    );*/
+  };
+
+  const handleQRRackEscaneado = (codigoQREscaneado) => {
+    if (!rackSugerido) {
+      Alert.alert("Error", "No hay rack seleccionado");
+      setEsperandoValidacionRack(false);
+      return;
+    }
+
+    // Comparar el código escaneado con el rack sugerido
+    if (codigoQREscaneado === rackSugerido.codigo_rack) {
+      // Código correcto, proceder con la entrada
+      Alert.alert(
+        "¡Rack Validado!",
+        `Confirmas la entrada de ${datosParaConfirmar.cantidadFinal} unidades del producto "${datosParaConfirmar.datosCompletos.nombre}" en el rack ${rackSugerido.codigo_rack}?`,
+        [
+          {
+            text: "Cancelar",
+            style: "cancel",
+            onPress: () => setEsperandoValidacionRack(false),
+          },
+          {
+            text: "Confirmar",
+            onPress: async () => {
+              setEsperandoValidacionRack(false);
+              await procesarEntrada(
+                datosParaConfirmar.datosCompletos,
+                datosParaConfirmar.cantidadFinal
+              );
+            },
+          },
+        ]
+      );
+    } else {
+      // Código incorrecto
+      Alert.alert(
+        "Rack Incorrecto",
+        `El código escaneado (${codigoQREscaneado}) no coincide con el rack asignado (${rackSugerido.codigo_rack}). Por favor, escanea el código QR del rack correcto.`,
+        [
+          { text: "Reintentar", onPress: () => {} }, // Se queda esperando el QR correcto
+          {
+            text: "Cancelar",
+            style: "cancel",
+            onPress: () => setEsperandoValidacionRack(false),
+          },
+        ]
+      );
+    }
   };
 
   // En EscanearCostenaTemplate.js, actualiza procesarEntrada:
@@ -322,6 +401,14 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           racksDisponibles={racksDisponibles}
           onRackChange={setRackSugerido}
           updating={updating}
+        />
+      )}
+
+      {esperandoValidacionRack && (
+        <ValidacionRackQR
+          onQRRackEscaneado={handleQRRackEscaneado}
+          rackEsperado={rackSugerido}
+          onCancel={() => setEsperandoValidacionRack(false)}
         />
       )}
 

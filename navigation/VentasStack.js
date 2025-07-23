@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import VentasScreen from "../screens/VentasScreen";
 import DetalleVentaScreen from "../screens/DetalleVentasScreen";
 import EscanearVentaScreen from "../screens/EscanearVentaScreen";
+import PisoScreen from "../screens/PisoScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -34,6 +35,12 @@ export default function VentasStack() {
         name="EscanearVenta"
         component={EscanearVentaScreen}
         options={{ title: "EscanearVenta" }}
+      />
+
+      <Stack.Screen
+        name="Piso"
+        component={PisoScreen}
+        options={{ title: "Piso" }}
       />
     </Stack.Navigator>
   );

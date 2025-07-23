@@ -59,14 +59,14 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: "row",
-    gap: 12,
     marginTop: 10,
+    gap: 10,
   },
   button: {
-    flex: 1,
     paddingVertical: 10,
     borderRadius: 8,
-    alignItems: "center",
+    padding: 10,
+    justifyContent: "space-between",
   },
   okButton: {
     backgroundColor: "#007bff",

@@ -24,6 +24,7 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
     searchDetalles,
     fetchDetalleVentas,
     getSugerenciaRack,
+    getSugerenciaPiso,
   } = useDetalleVentas(ventaId);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -76,13 +77,52 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
       return date.toLocaleDateString("es-ES");
     };
 
-    const sugerencia = await getSugerenciaRack(detalle.productos.id);
-    let mensajeRack = "";
-    if (sugerencia && sugerencia.racks) {
-      mensajeRack = `\n\n🎯 SUGERENCIA: Tomar de rack ${sugerencia.racks.codigo_rack}`;
-      if (sugerencia.fecha_caducidad) {
-        mensajeRack += `\n📅 Caduca: ${formatDate(sugerencia.fecha_caducidad)}`;
+    const sugerencia = await getSugerenciaPiso(detalle.productos.id);
+    let mensajePiso = "";
+    if (sugerencia) {
+      mensajePiso = `\n\n📦 Tomar producto de:`;
+      if (sugerencia.codigo_barras) {
+        mensajePiso += `\n🔍 Código de barras: ${sugerencia.codigo_barras}`;
       }
+      if (sugerencia.fecha_caducidad) {
+        mensajePiso += `\n📅 Caduca: ${formatDate(sugerencia.fecha_caducidad)}`;
+      }
+      if (sugerencia.cantidad) {
+        mensajePiso += `\n📊 Cantidad disponible: ${sugerencia.cantidad}`;
+      }
+    } else {
+      mensajePiso = `\n\n⚠️ No hay cajas en piso, baja de rack para continuar`;
+    }
+
+    // Crear el array de botones de forma condicional
+    const buttons = [{ text: "Cerrar", style: "cancel" }];
+
+    // Solo agregar el botón si no hay cajas en piso
+    if (!sugerencia) {
+      buttons.push({
+        text: "Ir a piso",
+        onPress: () => {
+          if (navigation) {
+            navigation.navigate("Piso", {
+              producto: detalle.productos,
+            });
+          }
+        },
+      });
+    } else {
+      // Mantener el botón original de Escanear cuando sí hay cajas en piso
+      buttons.push({
+        text: "Escanear",
+        onPress: () => {
+          if (navigation) {
+            navigation.navigate("EscanearVenta", {
+              detalle,
+              ventaId,
+              onUpdate: () => fetchDetalleVentas(ventaId),
+            });
+          }
+        },
+      });
     }
 
     Alert.alert(
@@ -91,23 +131,8 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
         detalle.cantidad || 0
       }${
         detalle.ubicacion ? `\nUbicación: ${detalle.ubicacion}` : ""
-      }${mensajeRack}`,
-      [
-        { text: "Cerrar", style: "cancel" },
-        {
-          text: "Escanear",
-          onPress: () => {
-            if (navigation) {
-              navigation.navigate("EscanearVenta", {
-                detalle,
-                ventaId, // ✅ Solo datos serializables
-                //callback para actualizar cuando se complete el escaneo
-                onUpdate: () => fetchDetalleVentas(ventaId),
-              });
-            }
-          },
-        },
-      ]
+      }${mensajePiso}`,
+      buttons // Usar el array dinámico
     );
   };
 

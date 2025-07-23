@@ -13,6 +13,7 @@ import HistorialEntradasScreen from "../screens/HistorialEntradaScreen";
 import EscanearCostenaScreen from "../screens/EscanearCostenaScreen";
 import AgregarProductoScreen from "../screens/AgregarProductoScreen";
 import PisoScreen from "../screens/PisoScreen";
+import BajarPisoScreen from "../screens/BajarPisoScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -106,6 +107,12 @@ export default function StackNavigator() {
         name="Piso"
         component={PisoScreen}
         options={{ title: "Piso" }}
+      />
+
+      <Stack.Screen
+        name="BajarPiso"
+        component={BajarPisoScreen}
+        options={{ title: "Bajar a Piso" }}
       />
 
       {/* Mantén tus otras pantallas si las necesitas */}

@@ -135,6 +135,8 @@ export const useProductos = (marcaId = null) => {
         .from("productos")
         .select("id, codigo")
         .eq("codigo", datosProducto.codigo)
+        .eq("marca_id", datosProducto.marca_id)
+
         .single();
 
       if (checkError && checkError.code !== "PGRST116") {

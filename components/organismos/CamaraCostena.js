@@ -299,17 +299,32 @@ const CamaraCostena = ({ onProductoDetectado }) => {
       console.error("Error en OCR.space:", error);
       setDebugInfo(`❌ Error: ${error.message}`);
 
-      let errorMessage = error.message;
-      if (errorMessage.includes("size limit")) {
-        errorMessage =
-          "La imagen es demasiado grande. Intenta acercarte más al código.";
-      } else if (errorMessage.includes("No se detectó texto")) {
-        errorMessage =
-          "No se pudo leer la etiqueta. Asegúrate de que esté bien iluminada y enfocada.";
-      }
+      Alert.alert(
+        "No se pudo procesar la imagen",
+        "¿Deseas ingresar manualmente todos los datos?",
+        [
+          {
+            text: "Cancelar",
+            style: "cancel",
+          },
+          {
+            text: "Entrada Manual",
+            onPress: () => {
+              // Crear producto vacío para entrada manual
+              const productoManual = {
+                codigo: null,
+                descripcion: null,
+                fechaCaducidad: null,
+                codigoBarras: null,
+                cantidad: 1,
+              };
+              onProductoDetectado(productoManual);
+            },
+          },
+        ]
+      );
 
-      Alert.alert("Error", errorMessage);
-      throw error;
+      return;
     }
   };
 
