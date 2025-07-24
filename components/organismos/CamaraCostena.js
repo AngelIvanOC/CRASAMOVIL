@@ -1,4 +1,4 @@
-// CamaraCostena.js
+// CamaraCostena.js - Versión con parsing original + optimización de imagen mejorada
 import React, { useState, useRef } from "react";
 import {
   View,
@@ -27,14 +27,14 @@ const CamaraCostena = ({ onProductoDetectado }) => {
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
+        quality: 0.7, // ✅ RESTAURADO: Mantenemos calidad original para OCR
         base64: false,
       });
 
       setPhoto(photo.uri);
       setDebugInfo("🔧 Comprimiendo imagen...");
 
-      const compressedImage = await compressImageForOCR(photo.uri);
+      const compressedImage = await compressImageForOCRImproved(photo.uri);
       setDebugInfo("✅ Imagen comprimida, procesando OCR...");
 
       await processOCRWithOCRSpace(compressedImage);
@@ -47,27 +47,61 @@ const CamaraCostena = ({ onProductoDetectado }) => {
     }
   };
 
-  // En CamaraCostena.js, modifica la función compressImageForOCR
-  const compressImageForOCR = async (imageUri) => {
+  // 🔹 NUEVA FUNCIÓN: Más inteligente pero conservadora
+  const compressImageForOCRImproved = async (imageUri) => {
     try {
-      // Primera compresión moderada
+      // Verificar tamaño inicial
+      const initialFileInfo = await FileSystem.getInfoAsync(imageUri);
+      const initialSizeKB = initialFileInfo.size / 1024;
+
+      console.log(`Tamaño inicial: ${initialSizeKB.toFixed(2)} KB`);
+
+      // Si ya es pequeña, no hacer nada
+      if (initialSizeKB <= 800) {
+        console.log("Imagen ya es del tamaño adecuado");
+        return imageUri;
+      }
+
+      // 🔹 COMPRESIÓN CONSERVADORA: Priorizar calidad de OCR
       let result = await ImageManipulator.manipulateAsync(imageUri, [], {
-        compress: 0.5,
+        compress: 0.6, // Más conservador que antes
         format: ImageManipulator.SaveFormat.JPEG,
-        resize: { width: 800 },
+        resize: { width: 1000 }, // Resolución más alta para mejor OCR
       });
 
-      // Verificar tamaño
-      const fileInfo = await FileSystem.getInfoAsync(result.uri);
-      const fileSizeKB = fileInfo.size / 1024;
+      // Verificar si necesita más compresión
+      let fileInfo = await FileSystem.getInfoAsync(result.uri);
+      let fileSizeKB = fileInfo.size / 1024;
 
-      // Si sigue siendo grande, comprimir más
-      if (fileSizeKB > 800) {
+      console.log(`Después de primera compresión: ${fileSizeKB.toFixed(2)} KB`);
+
+      // Solo comprimir más si es absolutamente necesario
+      if (fileSizeKB > 900) {
+        result = await ImageManipulator.manipulateAsync(result.uri, [], {
+          compress: 0.4,
+          format: ImageManipulator.SaveFormat.JPEG,
+          resize: { width: 800 }, // Todavía buena resolución
+        });
+
+        fileInfo = await FileSystem.getInfoAsync(result.uri);
+        fileSizeKB = fileInfo.size / 1024;
+        console.log(
+          `Después de segunda compresión: ${fileSizeKB.toFixed(2)} KB`
+        );
+      }
+
+      // Solo en casos extremos, comprimir más
+      if (fileSizeKB > 950) {
         result = await ImageManipulator.manipulateAsync(result.uri, [], {
           compress: 0.3,
           format: ImageManipulator.SaveFormat.JPEG,
-          resize: { width: 600 },
+          resize: { width: 700 },
         });
+
+        const finalFileInfo = await FileSystem.getInfoAsync(result.uri);
+        console.log(
+          `Compresión final: ${(finalFileInfo.size / 1024).toFixed(2)} KB`
+        );
       }
 
       return result.uri;
@@ -77,6 +111,7 @@ const CamaraCostena = ({ onProductoDetectado }) => {
     }
   };
 
+  // ✅ FUNCIÓN ORIGINAL RESTAURADA SIN CAMBIOS
   const parseCosteñaProduct = (text) => {
     const cleanText = text.replace(/\s+/g, " ").trim();
 
@@ -85,11 +120,11 @@ const CamaraCostena = ({ onProductoDetectado }) => {
       return parseCosteñaProducts(cleanText);
     } else {
       // Asumir que es Jumex u otra marca
-
       return parseJumexProduct(cleanText);
     }
   };
 
+  // ✅ FUNCIÓN ORIGINAL RESTAURADA SIN CAMBIOS
   const parseCosteñaProducts = (text) => {
     const product = {
       fechaCaducidad: null,
@@ -149,6 +184,7 @@ const CamaraCostena = ({ onProductoDetectado }) => {
     return product;
   };
 
+  // ✅ FUNCIÓN ORIGINAL RESTAURADA SIN CAMBIOS
   const parseJumexProduct = (text) => {
     const product = {
       fecha: null,
@@ -246,6 +282,7 @@ const CamaraCostena = ({ onProductoDetectado }) => {
       const fileInfo = await FileSystem.getInfoAsync(imageUri);
       const fileSizeKB = fileInfo.size / 1024;
 
+      // 🔹 LÍMITE AUMENTADO: Permitir hasta 1MB para mejor calidad OCR
       if (fileSizeKB > 1000) {
         throw new Error(
           "La imagen es demasiado grande. Intenta con mejor iluminación."

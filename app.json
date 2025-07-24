@@ -2,7 +2,7 @@
   "expo": {
     "name": "CRASAMovil",
     "slug": "CRASAMovil",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/iconCrasa.jpg",
     "userInterfaceStyle": "light",
@@ -16,14 +16,19 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/iconCrasa.jpg",
         "backgroundColor": "#ffffff"
       },
-      "permissions": ["CAMERA", "android.permission.CAMERA"],
+      "permissions": [
+        "CAMERA",
+        "android.permission.CAMERA",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE "
+      ],
       "package": "com.angelivanoc.CRASAMovil"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/iconCrasa.jpg"
     },
     "extra": {
       "eas": {
