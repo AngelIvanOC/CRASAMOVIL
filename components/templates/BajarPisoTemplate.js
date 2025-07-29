@@ -3,30 +3,45 @@ import {
   View,
   Text,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
 import { useCameraPermissions } from "expo-camera";
 import CamaraEscaneo from "../organismos/CamaraEscaneo";
 import { supabase } from "../../supabase/supabase";
+import CustomAlert from "../atomos/Alertas/CustomAlert";
 
-const BajarPisoTemplate = ({
-  producto,
-  navigation,
-  onScanComplete,
-}) => {
+const BajarPisoTemplate = ({ producto, navigation, onScanComplete }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [updating, setUpdating] = useState(false);
   const alreadyHandledRef = useRef(false);
 
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState({
+    title: "",
+    message: "",
+    buttons: [],
+  });
+
   useEffect(() => {
     if (!permission) {
       requestPermission();
     }
   }, [permission]);
+
+  const showAlert = ({ title, message, buttons = [] }) => {
+    setAlertProps({ title, message, buttons });
+    setAlertVisible(true);
+
+    // Si no tiene botones, cerrar automáticamente después de 4 segundos
+    if (buttons.length === 0) {
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 4000);
+    }
+  };
 
   const handleBarCodeScanned = async ({ data }) => {
     if (data.length < 10) {
@@ -50,8 +65,8 @@ const BajarPisoTemplate = ({
     console.log("[DEBUG] Producto:", producto.nombre);
 
     try {
-      // Buscar la caja en rack con este código de barras
-      const { data: cajaData, error } = await supabase
+      // Buscar primero en cajas
+      const { data: cajaData, error: cajaError } = await supabase
         .from("cajas")
         .select(
           `
@@ -72,62 +87,249 @@ const BajarPisoTemplate = ({
         .eq("codigo_barras", scannedCode)
         .single();
 
-      console.log("[DEBUG] Resultado consulta cajas:", { cajaData, error });
+      // Si no se encuentra en cajas, buscar en suelto
+      if (cajaError && cajaError.code === "PGRST116") {
+        const { data: sueltoData, error: sueltoError } = await supabase
+          .from("suelto")
+          .select(
+            `
+            id,
+            producto_id,
+            cantidad,
+            codigo_barras,
+            productos (
+              id,
+              codigo,
+              nombre
+            )
+          `
+          )
+          .eq("codigo_barras", scannedCode)
+          .single();
 
-      if (error) {
-        console.error("[ERROR] Supabase query error:", error);
-        Alert.alert(
-          "Código no encontrado",
-          "Este código de barras no está registrado en racks.",
-          [
-            { text: "Reintentar", onPress: () => setScanned(false) },
-            { text: "Cancelar", style: "cancel" },
-          ]
-        );
+        if (sueltoError) {
+          console.error(
+            "[ERROR] No encontrado en cajas ni suelto:",
+            sueltoError
+          );
+          showAlert({
+            title: "Código no encontrado",
+            message:
+              "Este código de barras no está registrado en racks ni suelto.",
+            buttons: [
+              {
+                text: "Reintentar",
+                onPress: () => {
+                  setAlertVisible(false);
+                  setScanned(false);
+                },
+              },
+              {
+                text: "Cancelar",
+                style: "cancel",
+                onPress: () => setAlertVisible(false),
+              },
+            ],
+          });
+          return;
+        }
+
+        // Verificar que pertenece al producto correcto (suelto)
+        if (sueltoData.producto_id !== producto.id) {
+          showAlert({
+            title: "Producto incorrecto",
+            message: `Este código pertenece a: ${sueltoData.productos.nombre}`,
+            buttons: [
+              {
+                text: "Reintentar",
+                onPress: () => {
+                  setAlertVisible(false);
+                  setScanned(false);
+                },
+              },
+              {
+                text: "Cancelar",
+                style: "cancel",
+                onPress: () => setAlertVisible(false),
+              },
+            ],
+          });
+          return;
+        }
+
+        // Confirmar antes de mover (desde suelto)
+        showAlert({
+          title: "Confirmar movimiento",
+          message: `¿Mover ${sueltoData.cantidad} unidades de ${sueltoData.productos.nombre} de suelto al piso?`,
+          buttons: [
+            {
+              text: "Cancelar",
+              onPress: () => {
+                setAlertVisible(false);
+                setScanned(false);
+              },
+              style: "cancel",
+            },
+            {
+              text: "Confirmar",
+              onPress: () => {
+                setAlertVisible(false);
+                handleMoverAPisoSuelto(sueltoData.id, sueltoData.cantidad);
+              },
+            },
+          ],
+        });
         return;
       }
 
-      // Verificar que pertenece al producto correcto
+      if (cajaError) {
+        console.error("[ERROR] Error en consulta:", cajaError);
+        showAlert({
+          title: "Error",
+          message: "Ocurrió un error al verificar el código de barras.",
+          buttons: [
+            {
+              text: "Reintentar",
+              onPress: () => {
+                setAlertVisible(false);
+                setScanned(false);
+              },
+            },
+            {
+              text: "Cancelar",
+              style: "cancel",
+              onPress: () => setAlertVisible(false),
+            },
+          ],
+        });
+        return;
+      }
+
+      // Verificar que pertenece al producto correcto (cajas)
       if (cajaData.producto_id !== producto.id) {
-        Alert.alert(
-          "Producto incorrecto",
-          `Este código pertenece a: ${cajaData.productos.nombre}`,
-          [
-            { text: "Reintentar", onPress: () => setScanned(false) },
-            { text: "Cancelar", style: "cancel" },
-          ]
-        );
+        showAlert({
+          title: "Producto incorrecto",
+          message: `Este código pertenece a: ${cajaData.productos.nombre}`,
+          buttons: [
+            {
+              text: "Reintentar",
+              onPress: () => {
+                setAlertVisible(false);
+                setScanned(false);
+              },
+            },
+            {
+              text: "Cancelar",
+              style: "cancel",
+              onPress: () => setAlertVisible(false),
+            },
+          ],
+        });
         return;
       }
 
-      // Confirmar antes de mover
-      Alert.alert(
-        "Confirmar movimiento",
-        `¿Mover ${cajaData.cantidad} unidades de ${
+      // Confirmar antes de mover (desde rack)
+      showAlert({
+        title: "Confirmar movimiento",
+        message: `¿Mover ${cajaData.cantidad} unidades de ${
           cajaData.productos.nombre
         } del rack ${cajaData.racks?.codigo_rack || "N/A"} al piso?`,
-        [
+        buttons: [
           {
             text: "Cancelar",
-            onPress: () => setScanned(false),
+            onPress: () => {
+              setAlertVisible(false);
+              setScanned(false);
+            },
             style: "cancel",
           },
           {
             text: "Confirmar",
-            onPress: () => handleMoverAPiso(cajaData.id, cajaData.cantidad),
+            onPress: () => {
+              setAlertVisible(false);
+              handleMoverAPiso(cajaData.id, cajaData.cantidad);
+            },
           },
-        ]
-      );
+        ],
+      });
     } catch (error) {
       console.error("[ERROR] Error en proceso de verificación:", error);
-      Alert.alert(
-        "Error",
-        "Ocurrió un error al verificar el código de barras.",
-        [
-          { text: "Reintentar", onPress: () => setScanned(false) },
-          { text: "Cancelar", style: "cancel" },
-        ]
-      );
+      showAlert({
+        title: "Error",
+        message: "Ocurrió un error al verificar el código de barras.",
+        buttons: [
+          {
+            text: "Reintentar",
+            onPress: () => {
+              setAlertVisible(false);
+              setScanned(false);
+            },
+          },
+          {
+            text: "Cancelar",
+            style: "cancel",
+            onPress: () => setAlertVisible(false),
+          },
+        ],
+      });
+    }
+  };
+
+  const handleMoverAPisoSuelto = async (sueltoId, cantidad) => {
+    try {
+      setUpdating(true);
+
+      // Usar la función SQL para mover de suelto a piso
+      const { data, error } = await supabase.rpc("mover_suelto_a_piso", {
+        suelto_id: sueltoId,
+      });
+
+      if (error) {
+        console.error("Error al mover suelto a piso:", error);
+        showAlert({
+          title: "Error",
+          message: "No se pudo mover el producto de suelto al piso",
+          buttons: [
+            {
+              text: "OK",
+              onPress: () => setAlertVisible(false),
+            },
+          ],
+        });
+        setScanned(false);
+        return;
+      }
+
+      showAlert({
+        title: "Éxito",
+        message: `Se movieron ${cantidad} unidades de suelto al piso correctamente.`,
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => {
+              setAlertVisible(false);
+              onScanComplete?.();
+            },
+          },
+        ],
+      });
+    } catch (error) {
+      console.error("Error moviendo suelto a piso:", error);
+      showAlert({
+        title: "Error",
+        message: error.message || "Error desconocido al mover desde suelto.",
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => {
+              setAlertVisible(false);
+              setScanned(false);
+            },
+          },
+        ],
+      });
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -142,23 +344,48 @@ const BajarPisoTemplate = ({
 
       if (error) {
         console.error("Error al mover a piso:", error);
-        Alert.alert("Error", "No se pudo mover el producto al piso");
+        showAlert({
+          title: "Error",
+          message: "No se pudo mover el producto al piso",
+          buttons: [
+            {
+              text: "OK",
+              onPress: () => setAlertVisible(false),
+            },
+          ],
+        });
         setScanned(false);
         return;
       }
 
-      Alert.alert(
-        "Éxito",
-        `Se movieron ${cantidad} unidades al piso correctamente.`,
-        [{ text: "OK", onPress: () => onScanComplete?.() }]
-      );
+      showAlert({
+        title: "Éxito",
+        message: `Se movieron ${cantidad} unidades al piso correctamente.`,
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => {
+              setAlertVisible(false);
+              onScanComplete?.();
+            },
+          },
+        ],
+      });
     } catch (error) {
       console.error("Error moviendo a piso:", error);
-      Alert.alert(
-        "Error",
-        error.message || "Error desconocido al mover la caja.",
-        [{ text: "OK", onPress: () => setScanned(false) }]
-      );
+      showAlert({
+        title: "Error",
+        message: error.message || "Error desconocido al mover la caja.",
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => {
+              setAlertVisible(false);
+              setScanned(false);
+            },
+          },
+        ],
+      });
     } finally {
       setUpdating(false);
     }
@@ -226,6 +453,14 @@ const BajarPisoTemplate = ({
           <Text style={styles.updatingText}>Moviendo a piso...</Text>
         </View>
       )}
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertProps.title}
+        message={alertProps.message}
+        buttons={alertProps.buttons}
+        onClose={() => setAlertVisible(false)}
+      />
     </View>
   );
 };

@@ -1,26 +1,67 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { FontAwesome, FontAwesome6 } from "@expo/vector-icons";
+import {
+  FontAwesome,
+  FontAwesome6,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
 
-const CardProducto = ({ producto, onHistorialPress, onPisoPress }) => {
+const CardProducto = ({
+  producto,
+  onHistorialPress,
+  onPisoPress,
+  onSueltoPress,
+}) => {
   const cajasEsArray = Array.isArray(producto.cajas);
+  const cantidadPiso = Array.isArray(producto.piso)
+    ? producto.piso.reduce((total, item) => total + (item.cantidad || 0), 0)
+    : 0;
+
+  const cantidadSuelto = Array.isArray(producto.suelto)
+    ? producto.suelto.reduce((total, item) => total + (item.cantidad || 0), 0)
+    : 0;
+
+  const cantidadTarimas = cajasEsArray
+    ? producto.cajas.filter((caja) => caja.cantidad > 0).length
+    : 0;
+
+  const registrosSuelto = Array.isArray(producto.suelto)
+    ? producto.suelto.length
+    : 0;
+
+  const totalTarimasConSuelto = cantidadTarimas + registrosSuelto;
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.codigo}>#{producto.codigo}</Text>
-        <Text style={styles.rack}>
-          {producto.cajas && producto.cajas.length > 0
-            ? [
-                ...new Set(
-                  producto.cajas
-                    .filter((caja) => caja.cantidad > 0)
-                    .map((caja) => caja.racks?.codigo_rack)
-                    .filter(Boolean)
-                ),
-              ].join(", ") || "N/A"
-            : "N/A"}
-        </Text>
+
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => onHistorialPress(producto)}
+          >
+            <FontAwesome name="cube" size={15} color="#e67e22" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => onSueltoPress(producto)}
+          >
+            <MaterialCommunityIcons
+              name="elevator-up"
+              size={15}
+              color="#8a0202ff"
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => onPisoPress(producto)}
+          >
+            <FontAwesome6 name="truck-ramp-box" size={15} color="#023E8A" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -30,34 +71,37 @@ const CardProducto = ({ producto, onHistorialPress, onPisoPress }) => {
 
         <View style={styles.footer}>
           <View style={styles.cantidadContainer}>
-            <Text style={styles.cantidadLabel}>Cantidad</Text>
+            <Text style={styles.cantidadLabel}>Tarimas</Text>
+            <Text style={styles.cantidad}>{totalTarimasConSuelto || 0}</Text>
+          </View>
+
+          <View style={styles.cantidadContainer}>
+            <Text style={styles.cantidadLabel}>En Rack</Text>
             <Text style={styles.cantidad}>{producto.cantidad || 0}</Text>
           </View>
 
           <View style={styles.cantidadContainer}>
-            <Text style={styles.cantidadLabel}>Cajas</Text>
-            <Text style={styles.cantidad}>
-              {cajasEsArray
-                ? producto.cajas.filter((caja) => caja.cantidad > 0).length
-                : producto.cajas || 0}
-            </Text>
+            <Text style={styles.cantidadLabel}>Piso</Text>
+            <Text style={styles.cantidad}>{cantidadPiso}</Text>
           </View>
 
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => onHistorialPress(producto)}
-            >
-              <FontAwesome name="cube" size={20} color="#e67e22" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => onPisoPress(producto)}
-            >
-              <FontAwesome6 name="truck-ramp-box" size={20} color="#023E8A" />
-            </TouchableOpacity>
+          <View style={styles.cantidadContainer}>
+            <Text style={styles.cantidadLabel}>Sueltos</Text>
+            <Text style={styles.cantidad}>{cantidadSuelto}</Text>
           </View>
+
+          <Text style={styles.rack}>
+            {producto.cajas && producto.cajas.length > 0
+              ? [
+                  ...new Set(
+                    producto.cajas
+                      .filter((caja) => caja.cantidad > 0)
+                      .map((caja) => caja.racks?.codigo_rack)
+                      .filter(Boolean)
+                  ),
+                ].join(", ") || "N/A"
+              : "N/A"}
+          </Text>
         </View>
       </View>
     </View>
@@ -109,7 +153,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 12,
+    marginBottom: 8,
     lineHeight: 20,
   },
   footer: {

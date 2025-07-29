@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useDetalleVentas } from "../../hooks/useDetalleVentas";
+import { useProductos } from "../../hooks/useProductos";
 import CardDetalleProducto from "../atomos/CardDetalleProducto";
 import BuscadorConStats from "../moleculas/BuscadorConStats";
 import ResumenVentaHeader from "../organismos/ResumenVentaHeader";
@@ -25,7 +26,10 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
     fetchDetalleVentas,
     getSugerenciaRack,
     getSugerenciaPiso,
+    updateDetalle,
+    updateEstadoDetalle,
   } = useDetalleVentas(ventaId);
+  const { procesarSalidaCompleta } = useProductos();
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef(null);
@@ -56,6 +60,35 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
     [performSearch]
   );
 
+  const handleSurtirManual = async (detalle) => {
+    try {
+      console.log("Intentando surtir detalle:", detalle.id);
+
+      // Usar la función existente que ya maneja todo
+      await procesarSalidaCompleta(
+        detalle.productos.id,
+        detalle.cantidad,
+        null, // sin código de barras
+        detalle.id // pasar el detalleId para actualizar escaneado
+      );
+
+      // Actualizar el estado como completado
+      await updateEstadoDetalle(detalle.id, {
+        estado: "completado",
+      });
+
+      await updateDetalle(detalle.id, {
+        estado: "completado",
+      });
+
+      Alert.alert("Éxito", "Producto surtido correctamente");
+      fetchDetalleVentas(ventaId);
+    } catch (error) {
+      console.error("Error completo:", error);
+      Alert.alert("Error", `Detalles: ${error.message}`);
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
@@ -81,9 +114,6 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
     let mensajePiso = "";
     if (sugerencia) {
       mensajePiso = `\n\n📦 Tomar producto de:`;
-      if (sugerencia.codigo_barras) {
-        mensajePiso += `\n🔍 Código de barras: ${sugerencia.codigo_barras}`;
-      }
       if (sugerencia.fecha_caducidad) {
         mensajePiso += `\n📅 Caduca: ${formatDate(sugerencia.fecha_caducidad)}`;
       }
@@ -112,15 +142,9 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
     } else {
       // Mantener el botón original de Escanear cuando sí hay cajas en piso
       buttons.push({
-        text: "Escanear",
+        text: "Surtir",
         onPress: () => {
-          if (navigation) {
-            navigation.navigate("EscanearVenta", {
-              detalle,
-              ventaId,
-              onUpdate: () => fetchDetalleVentas(ventaId),
-            });
-          }
+          handleSurtirManual(detalle);
         },
       });
     }

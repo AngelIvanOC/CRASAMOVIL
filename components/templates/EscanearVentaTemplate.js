@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -13,6 +12,7 @@ import { useProductos } from "../../hooks/useProductos";
 import CardProductoEscaneo from "../moleculas/CardProductoEscaneo";
 import CamaraEscaneo from "../organismos/CamaraEscaneo";
 import { supabase } from "../../supabase/supabase";
+import CustomAlert from "../atomos/Alertas/CustomAlert";
 
 const EscanearVentaTemplate = ({
   detalle,
@@ -29,6 +29,12 @@ const EscanearVentaTemplate = ({
   const [cantidadRestante, setCantidadRestante] = useState(detalle.cantidad);
   const escaneadoInicial = detalle.escaneado || 0;
   const [cantidadAcumulada, setCantidadAcumulada] = useState(escaneadoInicial);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState({
+    title: "",
+    message: "",
+    buttons: [],
+  });
 
   const alreadyHandledRef = useRef(false);
 
@@ -37,6 +43,18 @@ const EscanearVentaTemplate = ({
       requestPermission();
     }
   }, [permission]);
+
+  const showAlert = ({ title, message, buttons = [] }) => {
+    setAlertProps({ title, message, buttons });
+    setAlertVisible(true);
+
+    // Si no tiene botones, cerrar automáticamente después de 4 segundos
+    if (buttons.length === 0) {
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 4000);
+    }
+  };
 
   const extractProductCode = (barcode) => {
     // Función para extraer el código del producto desde el código de barras
@@ -112,14 +130,24 @@ const EscanearVentaTemplate = ({
 
       if (!pisoData || !pisoData.productos) {
         console.log("[DEBUG] No se encontró el código de barras en piso");
-        Alert.alert(
-          "Código no registrado",
-          "Este código de barras no está registrado en el sistema.",
-          [
-            { text: "Reintentar", onPress: () => setScanned(false) },
-            { text: "Cancelar", style: "cancel" },
-          ]
-        );
+        showAlert({
+          title: "Código no registrado",
+          message: "Este código de barras no está registrado en el sistema.",
+          buttons: [
+            {
+              text: "Reintentar",
+              onPress: () => {
+                setAlertVisible(false);
+                setScanned(false);
+              },
+            },
+            {
+              text: "Cancelar",
+              style: "cancel",
+              onPress: () => setAlertVisible(false),
+            },
+          ],
+        });
         return;
       }
 
@@ -138,26 +166,47 @@ const EscanearVentaTemplate = ({
         return;
       } else {
         console.log("[DEBUG] Códigos NO coinciden");
-        Alert.alert(
-          "Producto incorrecto",
-          `El código escaneado pertenece a otro producto (${scannedProductCode})`,
-          [
-            { text: "Reintentar", onPress: () => setScanned(false) },
-            { text: "Cancelar", style: "cancel" },
-          ]
-        );
+        showAlert({
+          title: "Producto incorrecto",
+          message: `El código escaneado pertenece a otro producto (${scannedProductCode})`,
+          buttons: [
+            {
+              text: "Reintentar",
+              onPress: () => {
+                setAlertVisible(false);
+                setScanned(false);
+              },
+            },
+            {
+              text: "Cancelar",
+              style: "cancel",
+              onPress: () => setAlertVisible(false),
+            },
+          ],
+        });
         return;
       }
     } catch (error) {
       console.error("[ERROR] Error en proceso de verificación:", error);
-      Alert.alert(
-        "Error",
-        "Ocurrió un error al verificar el código de barras. Por favor intenta nuevamente.",
-        [
-          { text: "Reintentar", onPress: () => setScanned(false) },
-          { text: "Cancelar", style: "cancel" },
-        ]
-      );
+      showAlert({
+        title: "Error",
+        message:
+          "Ocurrió un error al verificar el código de barras. Por favor intenta nuevamente.",
+        buttons: [
+          {
+            text: "Reintentar",
+            onPress: () => {
+              setAlertVisible(false);
+              setScanned(false);
+            },
+          },
+          {
+            text: "Cancelar",
+            style: "cancel",
+            onPress: () => setAlertVisible(false),
+          },
+        ],
+      });
       return;
     }
   };
@@ -196,30 +245,54 @@ const EscanearVentaTemplate = ({
       // 2. REEMPLAZAR el bloque de alerts:
       if (restante <= 0) {
         await updateEstadoDetalle(detalle.id, "completado");
-        Alert.alert(
-          "Venta Completada",
-          `Se escanearon todas las unidades requeridas (${cantidadTotal}).`,
-          [{ text: "OK", onPress: () => onScanComplete?.() }]
-        );
+        showAlert({
+          title: "Venta Completada",
+          message: `Se escanearon todas las unidades requeridas (${cantidadTotal}).`,
+          buttons: [
+            {
+              text: "OK",
+              onPress: () => {
+                setAlertVisible(false);
+                onScanComplete?.();
+              },
+            },
+          ],
+        });
       } else {
         // ✅ ACTUALIZAR estado a "pendiente" si hay progreso parcial
         if (escaneadoFinal > 0) {
           await updateEstadoDetalle(detalle.id, "pendiente");
         }
 
-        Alert.alert(
-          "Producto Escaneado",
-          `Se escanearon ${cantidadRestada} unidades de este código. Progreso: ${escaneadoFinal} de ${cantidadTotal} unidades.`,
-          [{ text: "OK", onPress: () => onScanComplete?.() }]
-        );
+        showAlert({
+          title: "Producto Escaneado",
+          message: `Se escanearon ${cantidadRestada} unidades de este código. Progreso: ${escaneadoFinal} de ${cantidadTotal} unidades.`,
+          buttons: [
+            {
+              text: "OK",
+              onPress: () => {
+                setAlertVisible(false);
+                onScanComplete?.();
+              },
+            },
+          ],
+        });
       }
     } catch (error) {
       console.error("Error actualizando estado:", error);
-      Alert.alert(
-        "Error",
-        error.message || "Error desconocido al procesar la salida.",
-        [{ text: "OK", onPress: () => setScanned(false) }]
-      );
+      showAlert({
+        title: "Error",
+        message: error.message || "Error desconocido al procesar la salida.",
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => {
+              setAlertVisible(false);
+              setScanned(false);
+            },
+          },
+        ],
+      });
     } finally {
       setUpdating(false);
     }
@@ -290,6 +363,14 @@ const EscanearVentaTemplate = ({
           setScanned(false);
         }}
         loading={updating}
+      />
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertProps.title}
+        message={alertProps.message}
+        buttons={alertProps.buttons}
+        onClose={() => setAlertVisible(false)}
       />
 
       {/* Controles 

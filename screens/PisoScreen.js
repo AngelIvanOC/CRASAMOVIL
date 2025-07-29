@@ -35,25 +35,49 @@ const PisoScreen = ({ route, navigation }) => {
 
   const getSugerenciaRack = async (productoId) => {
     try {
-      const { data: cajas, error } = await supabase
-        .from("cajas")
-        .select(
+      // Consultar tanto cajas como suelto
+      const [cajasResult, sueltoResult] = await Promise.all([
+        supabase
+          .from("cajas")
+          .select(
+            `
+            *,
+            racks (
+              id,
+              codigo_rack
+            )
           `
-          *,
-          racks (
-            id,
-            codigo_rack
           )
-        `
-        )
-        .eq("producto_id", productoId)
-        .gt("cantidad", 0)
-        .order("fecha_caducidad", { ascending: true })
-        .limit(1);
+          .eq("producto_id", productoId)
+          .gt("cantidad", 0)
+          .order("fecha_caducidad", { ascending: true }),
 
-      if (error) throw error;
+        supabase
+          .from("suelto")
+          .select("*")
+          .eq("producto_id", productoId)
+          .gt("cantidad", 0)
+          .order("fecha_caducidad", { ascending: true }),
+      ]);
 
-      return cajas && cajas.length > 0 ? cajas[0] : null;
+      if (cajasResult.error) throw cajasResult.error;
+      if (sueltoResult.error) throw sueltoResult.error;
+
+      const cajas = cajasResult.data || [];
+      const suelto = sueltoResult.data || [];
+
+      // Combinar ambos arrays y marcar el origen
+      const todoInventario = [
+        ...cajas.map((item) => ({ ...item, origen: "rack" })),
+        ...suelto.map((item) => ({ ...item, origen: "suelto" })),
+      ];
+
+      // Ordenar por fecha de caducidad (más próximo a vencer primero)
+      todoInventario.sort(
+        (a, b) => new Date(a.fecha_caducidad) - new Date(b.fecha_caducidad)
+      );
+
+      return todoInventario.length > 0 ? todoInventario[0] : null;
     } catch (error) {
       console.error("Error obteniendo sugerencia de rack:", error);
       return null;

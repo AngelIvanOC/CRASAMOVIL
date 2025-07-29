@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
+import CustomAlert from "../atomos/Alertas/CustomAlert"; // Asegúrate de importar CustomAlert
 
 const ProductoEscaneadoForm = ({
   productoEncontrado,
@@ -22,12 +23,23 @@ const ProductoEscaneadoForm = ({
   const [cantidadManual, setCantidadManual] = useState("");
   const [fechaCaducidadManual, setFechaCaducidadManual] = useState("");
   const [codigoBarrasManual, setCodigoBarrasManual] = useState("");
+  const [tipoUbicacion, setTipoUbicacion] = useState("rack"); // "rack" o "suelto"
+  const [showLocationAlert, setShowLocationAlert] = useState(false);
+  const [espaciosDisponibles, setEspaciosDisponibles] = useState(0);
+
+  // Estados para CustomAlert
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState({
+    title: "",
+    message: "",
+    buttons: [],
+  });
 
   // Actualizar estados cuando cambie el producto
   useEffect(() => {
     if (productoEncontrado) {
       setCantidadManual(
-        productoEncontrado.cantidadEscaneada?.toString() || "1"
+        productoEncontrado.cantidadEscaneada?.toString() || "0"
       );
       setFechaCaducidadManual(
         productoEncontrado.fechaCaducidad
@@ -37,26 +49,117 @@ const ProductoEscaneadoForm = ({
           : ""
       );
       setCodigoBarrasManual(productoEncontrado.codigoBarras || "");
+
+      // Calcular espacios disponibles en racks
+      const espaciosLibres = racksDisponibles.length;
+
+      setEspaciosDisponibles(espaciosLibres);
+
+      // Si no hay espacios disponibles, ir directo a suelto
+      if (espaciosLibres === 0) {
+        setTipoUbicacion("suelto");
+        showAlert({
+          title: "Sin espacios en racks",
+          message:
+            "No hay espacios disponibles en los racks. El producto se ubicará como suelto automáticamente.",
+          buttons: [
+            {
+              text: "Entendido",
+              onPress: () => setAlertVisible(false),
+            },
+          ],
+        });
+      } else {
+        setShowLocationAlert(true);
+      }
     }
   }, [productoEncontrado]);
 
-  const handleConfirm = () => {
-    const cantidadFinal = parseInt(cantidadManual) || 1;
+  const showAlert = ({ title, message, buttons = [] }) => {
+    setAlertProps({ title, message, buttons });
+    setAlertVisible(true);
 
-    if (cantidadFinal <= 0) {
-      Alert.alert("Error", "La cantidad debe ser mayor a 0");
+    // Si no tiene botones, cerrar automáticamente después de 4 segundos
+    if (buttons.length === 0) {
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 4000);
+    }
+  };
+
+  const validateFields = () => {
+    const errors = [];
+
+    // Validar código de barras
+    if (!codigoBarrasManual || codigoBarrasManual.trim() === "") {
+      errors.push("• Código de barras");
+    }
+
+    // Validar fecha de caducidad
+    if (!fechaCaducidadManual || fechaCaducidadManual.trim() === "") {
+      errors.push("• Fecha de caducidad");
+    } else {
+      // Validar formato de fecha
+      const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!fechaRegex.test(fechaCaducidadManual)) {
+        errors.push("• Fecha de caducidad debe tener formato YYYY-MM-DD");
+      } else {
+        // Validar que sea una fecha válida
+        const fecha = new Date(fechaCaducidadManual);
+        if (isNaN(fecha.getTime())) {
+          errors.push("• Fecha de caducidad no es válida");
+        }
+      }
+    }
+
+    // Validar cantidad
+    if (!cantidadManual || cantidadManual.trim() === "") {
+      errors.push("• Cantidad");
+    } else {
+      const cantidad = parseInt(cantidadManual);
+      if (isNaN(cantidad) || cantidad <= 0) {
+        errors.push("• Cantidad debe ser mayor a 0");
+      }
+    }
+
+    // Validar rack si el tipo de ubicación es "rack"
+    if (tipoUbicacion === "rack" && !rackSugerido) {
+      errors.push("• Debe seleccionar un rack disponible");
+    }
+
+    return errors;
+  };
+
+  const handleConfirm = () => {
+    const errors = validateFields();
+
+    if (errors.length > 0) {
+      showAlert({
+        title: "Campos Obligatorios",
+        message: `\n${errors.join("\n")}\n`,
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => setAlertVisible(false),
+          },
+        ],
+      });
       return;
     }
+
+    const cantidadFinal = parseInt(cantidadManual);
 
     // Crear objeto con todos los datos editables
     const datosCompletos = {
       ...productoEncontrado,
-      cantidadEscaneada: cantidadFinal, // Usar la cantidad del input
+      cantidadEscaneada: cantidadFinal,
       codigoBarras: codigoBarrasManual,
-      fechaCaducidad: fechaCaducidadManual || null,
+      fechaCaducidad: fechaCaducidadManual,
+      tipoUbicacion: tipoUbicacion,
+      rackAsignado: tipoUbicacion === "rack" ? rackSugerido : null,
       datosOCR: {
         ...productoEncontrado.datosOCR,
-        cantidad: cantidadFinal, // Usar la misma cantidad
+        cantidad: cantidadFinal,
       },
     };
 
@@ -65,7 +168,16 @@ const ProductoEscaneadoForm = ({
 
   const handleRackSelection = () => {
     if (racksDisponibles.length === 0) {
-      Alert.alert("Sin racks", "No hay racks disponibles para esta marca");
+      showAlert({
+        title: "Sin racks",
+        message: "No hay racks disponibles para esta marca",
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => setAlertVisible(false),
+          },
+        ],
+      });
       return;
     }
 
@@ -80,6 +192,11 @@ const ProductoEscaneadoForm = ({
   };
 
   if (!productoEncontrado) return null;
+
+  const handleLocationSelection = (ubicacion) => {
+    setTipoUbicacion(ubicacion);
+    setShowLocationAlert(false);
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -107,29 +224,11 @@ const ProductoEscaneadoForm = ({
           />
         </View>
 
-        {/*<View style={styles.inputContainer}>
-          <Text style={styles.label}>Stock Actual:</Text>
-          <TextInput
-            style={[styles.input, styles.readOnlyInput]}
-            value={productoEncontrado.cantidad?.toString() || "0"}
-            editable={false}
-            placeholder="Stock actual"
-          />
-        </View>*/}
-
-        {/*<View style={styles.inputContainer}>
-          <Text style={styles.label}>Marca:</Text>
-          <TextInput
-            style={[styles.input, styles.readOnlyInput]}
-            value={productoEncontrado.marcas?.nombre || "N/A"}
-            editable={false}
-            placeholder="Marca"
-          />
-        </View>*/}
-
-        {/* Campos EDITABLES */}
+        {/* Campos EDITABLES - OBLIGATORIOS */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Código de Barras:</Text>
+          <Text style={[styles.label, styles.requiredLabel]}>
+            Código de Barras: <Text style={styles.asterisk}>*</Text>
+          </Text>
           <TextInput
             style={styles.input}
             value={codigoBarrasManual}
@@ -140,7 +239,9 @@ const ProductoEscaneadoForm = ({
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Fecha de Caducidad:</Text>
+          <Text style={[styles.label, styles.requiredLabel]}>
+            Fecha de Caducidad: <Text style={styles.asterisk}>*</Text>
+          </Text>
           <TextInput
             style={styles.input}
             value={fechaCaducidadManual}
@@ -149,38 +250,82 @@ const ProductoEscaneadoForm = ({
           />
         </View>
 
-        {/* Selección de Rack */}
+        {/* Selección de Tipo de Ubicación */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Ingresar en el Rack:</Text>
+          <Text style={[styles.label, styles.requiredLabel]}>
+            Tipo de Ubicación: <Text style={styles.asterisk}>*</Text>
+          </Text>
+          <View style={styles.pickerContainer}>
+            <TouchableOpacity
+              style={[
+                styles.pickerOption,
+                tipoUbicacion === "rack" && styles.pickerOptionSelected,
+              ]}
+              onPress={() => setTipoUbicacion("rack")}
+            >
+              <Text
+                style={[
+                  styles.pickerOptionText,
+                  tipoUbicacion === "rack" && styles.pickerOptionTextSelected,
+                ]}
+              >
+                Subir a Rack
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.pickerOption,
+                tipoUbicacion === "suelto" && styles.pickerOptionSelected,
+              ]}
+              onPress={() => setTipoUbicacion("suelto")}
+            >
+              <Text
+                style={[
+                  styles.pickerOptionText,
+                  tipoUbicacion === "suelto" && styles.pickerOptionTextSelected,
+                ]}
+              >
+                Suelto
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Mostrar información de ubicación según la selección */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>
+            {tipoUbicacion === "rack" ? "Rack Asignado:" : "Ubicación:"}
+            {tipoUbicacion === "rack" && (
+              <Text style={styles.asterisk}> *</Text>
+            )}
+          </Text>
           <View style={styles.rackContainer}>
             <TextInput
               style={[styles.input, styles.readOnlyInput, { flex: 1 }]}
               value={
-                rackSugerido
-                  ? `${rackSugerido.codigo_rack}`
-                  : "No hay racks disponibles"
+                tipoUbicacion === "rack"
+                  ? rackSugerido
+                    ? `${rackSugerido.codigo_rack}`
+                    : "No hay racks disponibles"
+                  : "Producto Suelto - Sin ubicación específica"
               }
               editable={false}
-              placeholder="Rack asignado"
+              placeholder="Ubicación del producto"
             />
-            {/*<TouchableOpacity
-              style={styles.changeRackButton}
-              onPress={handleRackSelection}
-              disabled={racksDisponibles.length === 0}
-            >
-              <Text style={styles.changeRackButtonText}>Cambiar</Text>
-            </TouchableOpacity>*/}
           </View>
         </View>
 
-        {/* CAMPO ÚNICO DE CANTIDAD */}
+        {/* CAMPO ÚNICO DE CANTIDAD - OBLIGATORIO */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Cantidad a Agregar al Inventario:</Text>
+          <Text style={[styles.label, styles.requiredLabel]}>
+            Cantidad a Agregar al Inventario:{" "}
+            <Text style={styles.asterisk}>*</Text>
+          </Text>
           <Text style={styles.helperText}>
-            Cantidad detectada: {productoEncontrado.cantidadEscaneada || 1}
+            Cantidad detectada: {productoEncontrado.cantidadEscaneada || 0}
           </Text>
           <TextInput
-            style={[styles.input, styles.highlightedInput]}
+            style={styles.input}
             value={cantidadManual}
             onChangeText={setCantidadManual}
             placeholder="Cantidad a agregar"
@@ -221,12 +366,35 @@ const ProductoEscaneadoForm = ({
             onPress={onCancel}
             disabled={updating}
           >
-            <Text style={styles.cancelButtonText}>
-              Cancelar y Escanear Otro
-            </Text>
+            <Text style={styles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
         </View>
       </View>
+
+      <CustomAlert
+        visible={showLocationAlert}
+        title="Ubicacion del producto"
+        message={`¿Donde ubicaras "${productoEncontrado?.nombre || ""}"?`}
+        buttons={[
+          {
+            text: `En Rack (${espaciosDisponibles} libres)`,
+            onPress: () => handleLocationSelection("rack"),
+          },
+          {
+            text: "Suelto",
+            onPress: () => handleLocationSelection("suelto"),
+          },
+        ]}
+        onClose={() => setShowLocationAlert(false)}
+      />
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertProps.title}
+        message={alertProps.message}
+        buttons={alertProps.buttons}
+        onClose={() => setAlertVisible(false)}
+      />
     </ScrollView>
   );
 };
@@ -261,6 +429,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     marginBottom: 8,
+  },
+  requiredLabel: {
+    color: "#333",
+  },
+  asterisk: {
+    color: "#dc3545",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   helperText: {
     fontSize: 12,
@@ -351,6 +527,33 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: "white",
     fontSize: 16,
+    fontWeight: "bold",
+  },
+  pickerContainer: {
+    flexDirection: "row",
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    overflow: "hidden",
+  },
+  pickerOption: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
+  },
+  pickerOptionSelected: {
+    backgroundColor: "#023E8A",
+  },
+  pickerOptionText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#333",
+  },
+  pickerOptionTextSelected: {
+    color: "white",
     fontWeight: "bold",
   },
 });

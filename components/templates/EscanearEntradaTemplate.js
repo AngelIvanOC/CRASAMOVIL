@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   TextInput,
   TouchableWithoutFeedback,
@@ -29,6 +28,7 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   const [productoEncontrado, setProductoEncontrado] = useState(null);
   const [cantidadManual, setCantidadManual] = useState("");
   const [fechaCaducidadManual, setFechaCaducidadManual] = useState("");
+  const [resetQRScanner, setResetQRScanner] = useState(false);
 
   const [alertVisible, setAlertVisible] = useState(false);
   const { obtenerRacksDisponiblesPorMarca } = useRacks();
@@ -37,6 +37,10 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   const [esperandoValidacionRack, setEsperandoValidacionRack] = useState(false);
   const [datosParaConfirmar, setDatosParaConfirmar] = useState(null);
 
+  const [esperandoSeleccionUbicacion, setEsperandoSeleccionUbicacion] =
+    useState(false);
+  const [productoTemporal, setProductoTemporal] = useState(null);
+  
   const [alertProps, setAlertProps] = useState({
     title: "",
     message: "",
@@ -98,7 +102,19 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     // Verificar que tenga al menos 12 dígitos (7 del código + 5 de cantidad)
     if (cleanBarcode.length < 12) {
       console.log("Código de barras muy corto:", cleanBarcode.length);
-      return { productCode: cleanBarcode, cantidad: 1 };
+      return { productCode: cleanBarcode, cantidad: 0 };
+    }
+
+    if (cleanBarcode.length < 16) {
+      // TOMAR LOS ÚLTIMOS 4 DÍGITOS
+      const ultimos4 = cleanBarcode.slice(-4);
+      console.log("Últimos 4 dígitos:", ultimos4);
+
+      // QUITAR EL ÚLTIMO => quedan los 3 antepenúltimos
+      const codigoProducto = ultimos4.slice(0, 3);
+      console.log("Código de producto (3 antepenúltimos):", codigoProducto);
+
+      return { productCode: codigoProducto, cantidad: 0 };
     }
 
     try {
@@ -120,11 +136,11 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
 
       return {
         productCode: productCode,
-        cantidad: cantidad > 0 ? cantidad : 1, // Asegurar que la cantidad sea al menos 1
+        cantidad: cantidad > 0 ? cantidad : 0, // Asegurar que la cantidad sea al menos 1
       };
     } catch (error) {
       console.error("Error extrayendo información del código:", error);
-      return { productCode: cleanBarcode, cantidad: 1 };
+      return { productCode: cleanBarcode, cantidad: 0 };
     }
   };
 
@@ -154,6 +170,18 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   };
 
   const handleBarCodeScanned = async ({ data }) => {
+    console.log("=== CÓDIGO ESCANEADO ===");
+    console.log("Datos recibidos:", data);
+    console.log("Longitud:", data.length);
+    console.log("Tipo:", typeof data);
+
+    // Cambiar el filtro - los códigos EAN-13 tienen exactamente 13 dígitos
+    // pero también permitir otros formatos comunes
+    if (!data || data.length < 8) {
+      console.log("Código ignorado por longitud muy corta:", data);
+      return;
+    }
+
     if (data.length < 13) {
       console.log("Código ignorado por longitud:", data);
       return; // ignorar códigos que no sean de 12 dígitos
@@ -285,8 +313,79 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   };
 
   const handleQRRackEscaneado = (codigoQREscaneado) => {
+    // ✅ CASO 1: Si es tipo "suelto", validar que el QR sea "SUELTO"
+    if (datosParaConfirmar?.datosCompletos?.tipoUbicacion === "suelto") {
+      if (codigoQREscaneado.toUpperCase() === "SUELTO") {
+        // Código correcto para suelto
+        showAlert({
+          title: "¡Validación Exitosa!",
+          message: `¿Confirmas la entrada de ${datosParaConfirmar.cantidadFinal} unidades del producto "${datosParaConfirmar.datosCompletos.nombre}" como producto SUELTO?`,
+          buttons: [
+            {
+              text: "Cancelar",
+              style: "cancel",
+              onPress: () => {
+                setAlertVisible(false);
+                setEsperandoValidacionRack(false);
+              },
+            },
+            {
+              text: "Confirmar",
+              onPress: async () => {
+                setAlertVisible(false);
+                setEsperandoValidacionRack(false);
+                // ✅ Procesar entrada sin rack (null)
+                await procesarEntrada(
+                  datosParaConfirmar.datosCompletos,
+                  datosParaConfirmar.cantidadFinal
+                );
+              },
+            },
+          ],
+        });
+      } else {
+        // Código incorrecto para suelto
+        showAlert({
+          title: "Código Incorrecto",
+          message: `Para productos SUELTOS debes escanear el código QR que dice "SUELTO". Código escaneado: ${codigoQREscaneado}`,
+          buttons: [
+            {
+              text: "Reintentar",
+              onPress: () => {
+                setAlertVisible(false);
+                setResetQRScanner(true);
+                setTimeout(() => setResetQRScanner(false), 100);
+              },
+            },
+            {
+              text: "Cancelar",
+              style: "cancel",
+              onPress: () => {
+                setAlertVisible(false);
+                setEsperandoValidacionRack(false);
+              },
+            },
+          ],
+        });
+      }
+      return;
+    }
+
+    // ✅ CASO 2: Si es tipo "rack", validar con el rack asignado
     if (!rackSugerido) {
-      Alert.alert("Error", "No hay rack seleccionado");
+      showAlert({
+        title: "Error",
+        message: "No hay rack seleccionado",
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => {
+              setAlertVisible(false);
+              setEsperandoValidacionRack(false);
+            },
+          },
+        ],
+      });
       setEsperandoValidacionRack(false);
       return;
     }
@@ -294,18 +393,22 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     // Comparar el código escaneado con el rack sugerido
     if (codigoQREscaneado === rackSugerido.codigo_rack) {
       // Código correcto, proceder con la entrada
-      Alert.alert(
-        "¡Rack Validado!",
-        `Confirmas la entrada de ${datosParaConfirmar.cantidadFinal} unidades del producto "${datosParaConfirmar.datosCompletos.nombre}" en el rack ${rackSugerido.codigo_rack}?`,
-        [
+      showAlert({
+        title: "¡Rack Validado!",
+        message: `¿Confirmas la entrada de ${datosParaConfirmar.cantidadFinal} unidades del producto "${datosParaConfirmar.datosCompletos.nombre}" en el rack ${rackSugerido.codigo_rack}?`,
+        buttons: [
           {
             text: "Cancelar",
             style: "cancel",
-            onPress: () => setEsperandoValidacionRack(false),
+            onPress: () => {
+              setAlertVisible(false);
+              setEsperandoValidacionRack(false);
+            },
           },
           {
             text: "Confirmar",
             onPress: async () => {
+              setAlertVisible(false);
               setEsperandoValidacionRack(false);
               await procesarEntrada(
                 datosParaConfirmar.datosCompletos,
@@ -313,22 +416,34 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
               );
             },
           },
-        ]
-      );
+        ],
+      });
     } else {
       // Código incorrecto
-      Alert.alert(
-        "Rack Incorrecto",
-        `El código escaneado (${codigoQREscaneado}) no coincide con el rack asignado (${rackSugerido.codigo_rack}). Por favor, escanea el código QR del rack correcto.`,
-        [
-          { text: "Reintentar", onPress: () => {} }, // Se queda esperando el QR correcto
+      showAlert({
+        title: "Rack Incorrecto",
+        message: `El código escaneado (${codigoQREscaneado}) no coincide con el rack asignado (${rackSugerido.codigo_rack}). Por favor, escanea el código QR del rack correcto.`,
+        buttons: [
+          {
+            text: "Reintentar",
+            onPress: () => {
+              setAlertVisible(false);
+              // AQUÍ ESTÁ EL CAMBIO CLAVE: Resetear el scanner QR
+              setResetQRScanner(true);
+              // Resetear el flag después de un breve delay
+              setTimeout(() => setResetQRScanner(false), 100);
+            },
+          },
           {
             text: "Cancelar",
             style: "cancel",
-            onPress: () => setEsperandoValidacionRack(false),
+            onPress: () => {
+              setAlertVisible(false);
+              setEsperandoValidacionRack(false);
+            },
           },
-        ]
-      );
+        ],
+      });
     }
   };
 
@@ -340,15 +455,23 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
         productoId: productoEncontrado.id,
         cantidad: cantidad,
         codigoBarras: productoEncontrado.codigoBarras,
+        tipoUbicacion: datosCompletos.tipoUbicacion,
       });
+
+      // ✅ Si es suelto, pasar null como rack_id
+      const rackIdFinal =
+        datosCompletos.tipoUbicacion === "suelto"
+          ? null
+          : rackSugerido?.id || null;
 
       // Usar la función completa que actualiza el producto y crea el historial
       const resultado = await procesarEntradaCompleta(
         datosCompletos.id,
         cantidad,
         datosCompletos.codigoBarras,
-        rackSugerido?.id || null,
-        datosCompletos.fechaCaducidad || null
+        rackIdFinal,
+        datosCompletos.fechaCaducidad || null,
+        datosCompletos.tipoUbicacion
       );
 
       console.log("Entrada procesada exitosamente:", resultado);
@@ -363,23 +486,19 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       const cantidadNueva =
         resultado?.cantidadNueva ?? datosCompletos.cantidad + cantidad;
 
-      Alert.alert(
-        "¡Entrada Registrada!",
-        `Se han agregado ${cantidad} unidades del producto "${datosCompletos.nombre}"\n\nCantidad anterior: ${cantidadAnterior}\nCantidad nueva: ${cantidadNueva}\n\nCódigo de barras: ${datosCompletos.codigoBarras}`,
-        [
+      showAlert({
+        title: "¡Entrada Registrada!",
+        message: `Se han agregado ${cantidad} unidades del producto "${datosCompletos.nombre}"\n\nCantidad anterior: ${cantidadAnterior}\nCantidad nueva: ${cantidadNueva}\n\nCódigo de barras: ${datosCompletos.codigoBarras}`,
+        buttons: [
           {
             text: "Continuar",
             onPress: () => {
+              setAlertVisible(false);
               // Resetear completamente para permitir otro escaneo
               setProductoEncontrado(null);
               setScanned(false);
               setScanning(false);
               setCantidadManual("");
-              setProductoEncontrado(null);
-              setScanned(false);
-              setScanning(false);
-              setCantidadManual("");
-
               setRackSugerido(null);
               setRacksDisponibles([]);
               alreadyHandledRef.current = false;
@@ -390,22 +509,28 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           {
             text: "Finalizar",
             onPress: () => {
+              setAlertVisible(false);
               if (onEntradaComplete) {
                 onEntradaComplete();
               }
             },
           },
-        ]
-      );
+        ],
+      });
     } catch (error) {
       console.error("Error procesando entrada:", error);
-      Alert.alert(
-        "Error",
-        `No se pudo procesar la entrada. Por favor, intenta nuevamente.\n\nDetalles del error: ${
+      showAlert({
+        title: "Error",
+        message: `No se pudo procesar la entrada. Por favor, intenta nuevamente.\n\nDetalles del error: ${
           error?.message || "Error desconocido"
         }`,
-        [{ text: "OK" }]
-      );
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => setAlertVisible(false),
+          },
+        ],
+      });
     } finally {
       setUpdating(false);
     }
@@ -475,54 +600,45 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View style={styles.container}>
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Información del producto encontrado */}
+    <View style={styles.container}>
+      {/* Información del producto encontrado */}
 
-            {productoEncontrado && (
-              <ProductoEscaneadoForm
-                productoEncontrado={productoEncontrado}
-                onConfirmEntrada={handleConfirmEntrada}
-                onCancel={handleCancelProducto}
-                rackSugerido={rackSugerido}
-                racksDisponibles={racksDisponibles}
-                onRackChange={setRackSugerido}
-                updating={updating}
-              />
-            )}
+      {productoEncontrado && (
+        <ProductoEscaneadoForm
+          productoEncontrado={productoEncontrado}
+          onConfirmEntrada={handleConfirmEntrada}
+          onCancel={handleCancelProducto}
+          rackSugerido={rackSugerido}
+          racksDisponibles={racksDisponibles}
+          onRackChange={setRackSugerido}
+          updating={updating}
+        />
+      )}
 
-            {esperandoValidacionRack && (
-              <ValidacionRackQR
-                onQRRackEscaneado={handleQRRackEscaneado}
-                rackEsperado={rackSugerido}
-                onCancel={() => setEsperandoValidacionRack(false)}
-              />
-            )}
+      {esperandoValidacionRack && (
+        <ValidacionRackQR
+          onQRRackEscaneado={handleQRRackEscaneado}
+          rackEsperado={rackSugerido}
+          onCancel={() => setEsperandoValidacionRack(false)}
+          resetScan={resetQRScanner}
+          tipoUbicacion={
+            datosParaConfirmar?.datosCompletos?.tipoUbicacion || "rack"
+          } // ✅ Nuevo prop
+        />
+      )}
 
-            {/* Cámara de escaneo con botón integrado */}
-            {!productoEncontrado && (
-              <CamaraEscaneo
-                onBarCodeScanned={handleBarCodeScanned}
-                scanning={scanning}
-                scanned={scanned}
-                onStartScanning={handleStartScanning}
-                onCancelScanning={handleCancelScanning}
-                loading={updating}
-              />
-            )}
-          </ScrollView>
-          {/* Controles
+      {/* Cámara de escaneo con botón integrado */}
+      {!productoEncontrado && (
+        <CamaraEscaneo
+          onBarCodeScanned={handleBarCodeScanned}
+          scanning={scanning}
+          scanned={scanned}
+          onStartScanning={handleStartScanning}
+          onCancelScanning={handleCancelScanning}
+          loading={updating}
+        />
+      )}
+      {/* Controles
         <View style={styles.controlsContainer}>
           {!productoEncontrado && !scanning && !scanned && (
             <TouchableOpacity
@@ -581,23 +697,21 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
         </View>
          */}
 
-          {updating && (
-            <View style={styles.updatingOverlay}>
-              <ActivityIndicator size="large" color="#023E8A" />
-              <Text style={styles.updatingText}>Procesando entrada...</Text>
-            </View>
-          )}
-
-          <CustomAlert
-            visible={alertVisible}
-            title={alertProps.title}
-            message={alertProps.message}
-            buttons={alertProps.buttons}
-            onClose={() => setAlertVisible(false)}
-          />
+      {updating && (
+        <View style={styles.updatingOverlay}>
+          <ActivityIndicator size="large" color="#023E8A" />
+          <Text style={styles.updatingText}>Procesando entrada...</Text>
         </View>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+      )}
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertProps.title}
+        message={alertProps.message}
+        buttons={alertProps.buttons}
+        onClose={() => setAlertVisible(false)}
+      />
+    </View>
   );
 };
 

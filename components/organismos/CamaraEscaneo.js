@@ -48,7 +48,21 @@ const CamaraEscaneo = ({
         style={styles.camera}
         onBarcodeScanned={scanned ? undefined : onBarCodeScanned}
         barcodeScannerSettings={{
-          barcodeTypes: ["code128", "ean13", "qr", "code39"],
+          barcodeTypes: [
+            "aztec",
+            "ean13",
+            "ean8",
+            "qr",
+            "pdf417",
+            "upc_e",
+            "datamatrix",
+            "code39",
+            "code93",
+            "itf14",
+            "codabar",
+            "code128",
+            "upc_a",
+          ],
         }}
       />
 

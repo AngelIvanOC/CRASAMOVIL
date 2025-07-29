@@ -1,13 +1,21 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { supabase } from "../../supabase/supabase";
+import CustomAlert from "../atomos/Alertas/CustomAlert"; // Asegúrate de tener este componente
 
 const HistorialEntradaCard = ({
   item,
   mostrarNombreProducto = false,
   onMoverAPiso,
 }) => {
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState({
+    title: "",
+    message: "",
+    buttons: [],
+  });
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("es-ES", {
@@ -41,6 +49,18 @@ const HistorialEntradaCard = ({
     return "Vigente";
   };
 
+  const showAlert = ({ title, message, buttons = [] }) => {
+    setAlertProps({ title, message, buttons });
+    setAlertVisible(true);
+
+    // Si no tiene botones, cerrar automáticamente después de 4 segundos
+    if (buttons.length === 0) {
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 4000);
+    }
+  };
+
   const moverAPiso = async () => {
     try {
       // Inicia la transacción
@@ -50,31 +70,67 @@ const HistorialEntradaCard = ({
 
       if (error) {
         console.error("Error al mover a piso:", error);
-        Alert.alert("Error", "No se pudo mover el producto al piso");
+        showAlert({
+          title: "Error",
+          message: "No se pudo mover el producto al piso",
+          buttons: [
+            {
+              text: "OK",
+              onPress: () => setAlertVisible(false),
+            },
+          ],
+        });
         return;
       }
 
-      Alert.alert("Éxito", "Producto movido al piso correctamente");
-
+      showAlert({
+        title: "Éxito",
+        message: "Producto movido al piso correctamente",
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => setAlertVisible(false),
+          },
+        ],
+      });
       // Callback para actualizar la lista en el componente padre
       if (onMoverAPiso) {
         onMoverAPiso(item.id);
       }
     } catch (error) {
       console.error("Error:", error);
-      Alert.alert("Error", "Ocurrió un error inesperado");
+      showAlert({
+        title: "Error",
+        message: "Ocurrió un error inesperado",
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => setAlertVisible(false),
+          },
+        ],
+      });
     }
   };
 
   const confirmarMover = () => {
-    Alert.alert(
-      "Confirmar",
-      `¿Estás seguro de que quieres mover ${item.cantidad} unidades al piso?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Confirmar", onPress: moverAPiso },
-      ]
-    );
+    showAlert({
+      title: "Confirmar",
+      message: `¿Estás seguro de que quieres mover ${item.cantidad} unidades al piso?`,
+      buttons: [
+        {
+          text: "Cancelar",
+          style: "cancel",
+          onPress: () => setAlertVisible(false),
+        },
+        {
+          text: "Confirmar",
+          onPress: () => {
+            setAlertVisible(false);
+            moverAPiso();
+          },
+        },
+      ],
+    });
   };
 
   const statusColor = getStatusColor(item.fecha_caducidad);
@@ -98,7 +154,7 @@ const HistorialEntradaCard = ({
         Codigo de barras: <Text style={styles.value}>{item.codigo_barras}</Text>
       </Text>
       <Text style={styles.label}>
-        Rack:{" "}
+        Ubicacion:{" "}
         <Text style={styles.value}>{item.racks?.codigo_rack || "N/A"}</Text>
       </Text>
       <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
@@ -109,6 +165,14 @@ const HistorialEntradaCard = ({
         <Text style={styles.moverText}>Mover a piso</Text>
         <FontAwesome6 name="truck-ramp-box" size={24} color="#023E8A" />
       </TouchableOpacity>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertProps.title}
+        message={alertProps.message}
+        buttons={alertProps.buttons}
+        onClose={() => setAlertVisible(false)}
+      />
     </View>
   );
 };

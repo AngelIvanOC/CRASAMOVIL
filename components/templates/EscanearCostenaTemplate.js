@@ -7,15 +7,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-  Alert,
 } from "react-native";
 import { useCameraPermissions } from "expo-camera";
 import { useProductos } from "../../hooks/useProductos";
 import { useRacks } from "../../hooks/useRacks";
-import CamaraCostena from "../organismos/CamaraCostena"; // Componente que crearemos después
+import CamaraCostena from "../organismos/CamaraCostena";
 import CustomAlert from "../atomos/Alertas/CustomAlert";
 import ProductoEscaneadoForm from "../organismos/ProductoEscaneadoForm";
-import ValidacionRackQR from "../organismos/ValidacionRackQR"; // Componente que crearemos después
+import ValidacionRackQR from "../organismos/ValidacionRackQR";
 
 const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   const [permission, requestPermission] = useCameraPermissions();
@@ -26,8 +25,8 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   const [rackSugerido, setRackSugerido] = useState(null);
   const [esperandoValidacionRack, setEsperandoValidacionRack] = useState(false);
   const [datosParaConfirmar, setDatosParaConfirmar] = useState(null);
+  const [resetQRScanner, setResetQRScanner] = useState(false);
 
-  
   const { obtenerRacksDisponiblesPorMarca } = useRacks();
   const {
     productos,
@@ -56,7 +55,7 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       if (marca?.id) {
-        fetchProductos(marca.id); // recarga productos al volver
+        fetchProductos(marca.id);
       }
     });
 
@@ -71,7 +70,6 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     if (buttons.length === 0) {
       setTimeout(() => {
         setAlertVisible(false);
-        // Resetear estados después de mostrar la alerta
         resetScannerState();
       }, 4000);
     }
@@ -83,25 +81,23 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     alreadyHandledRef.current = false;
   };
 
-  // En EscanearCostenaTemplate.js, actualiza handleProductoDetectado
   const handleProductoDetectado = async (productoData) => {
     if (!productoData.codigo) {
       const racks = await obtenerRacksDisponiblesPorMarca(marca.id);
       setRacksDisponibles(racks);
       setRackSugerido(racks.length > 0 ? racks[0] : null);
 
-      // Producto temporal para entrada manual
       setProductoEncontrado({
-        id: null, // Sin ID porque no existe en BD
-        codigo: "", // Código vacío para que el usuario lo llene
-        nombre: "", // Nombre vacío
-        cantidad: 0, // Stock actual 0
+        id: null,
+        codigo: "",
+        nombre: "",
+        cantidad: 0,
         marca_id: marca.id,
         cantidadEscaneada: productoData.cantidad || 1,
         codigoBarras: productoData.codigoBarras || "",
         fechaCaducidad: productoData.fechaCaducidad,
         datosOCR: productoData,
-        esEntradaManual: true, // Flag para identificar entrada manual
+        esEntradaManual: true,
       });
 
       setCantidadManual(productoData.cantidad?.toString() || "1");
@@ -109,34 +105,11 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     }
 
     try {
-      // Buscar el producto en la base de datos por código
       const producto = productos.find(
         (p) => String(p.codigo).trim() === String(productoData.codigo).trim()
       );
 
       if (!producto) {
-        /*Alert.alert(
-          "Producto no registrado",
-          `El producto con código ${productoData.codigo} no está registrado. ¿Deseas crearlo?`,
-          [
-            { text: "Cancelar", style: "cancel" },
-            {
-              text: "Crear producto",
-              onPress: () => {
-                navigation.navigate("CrearProducto", {
-                  datosIniciales: {
-                    codigo: productoData.codigo,
-                    nombre:
-                      productoData.descripcion ||
-                      `Producto ${productoData.codigo}`,
-                    marca_id: marca.id,
-                  },
-                });
-              },
-            },
-          ]
-        );*/
-
         showAlert({
           title: "Producto No Encontrado",
           message: `No se encontró un producto con el código: ${productoData.codigo}`,
@@ -162,22 +135,24 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
         return;
       }
 
-      // Solo verificar código de barras si el producto existe y hay código
       if (productoData.codigoBarras) {
         const esUnico = await verificarCodigoBarrasUnico(
           productoData.codigoBarras
         );
         if (!esUnico) {
-          Alert.alert(
-            "Código ya registrado",
-            "Este código de barras ya fue escaneado anteriormente",
-            [
+          showAlert({
+            title: "Código ya registrado",
+            message: "Este código de barras ya fue escaneado anteriormente",
+            buttons: [
               {
                 text: "Entendido",
-                onPress: () => setProductoEncontrado(null),
+                onPress: () => {
+                  setAlertVisible(false);
+                  setProductoEncontrado(null);
+                },
               },
-            ]
-          );
+            ],
+          });
           return;
         }
       }
@@ -203,59 +178,118 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       setCantidadManual(productoData.cantidad?.toString() || "1");
     } catch (error) {
       console.error("Error al procesar producto detectado:", error);
-      Alert.alert("Error", "No se pudo procesar el producto detectado");
+      showAlert({
+        title: "Error",
+        message: "No se pudo procesar el producto detectado",
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => setAlertVisible(false),
+          },
+        ],
+      });
     }
   };
+
   const handleConfirmEntrada = (datosCompletos, cantidadFinal) => {
-    /*if (!productoEncontrado) return;
-
-    const cantidadFinal = parseInt(cantidadManual) || 1;
-
-    if (cantidadFinal <= 0) {
-      Alert.alert("Error", "La cantidad debe ser mayor a 0");
-      return;
-    }*/
-
     setDatosParaConfirmar({ datosCompletos, cantidadFinal });
     setEsperandoValidacionRack(true);
-
-    /*Alert.alert(
-      "Confirmar Entrada",
-      `¿Confirmas la entrada de ${cantidadFinal} unidades del producto "${datosCompletos.nombre}"?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Confirmar",
-          onPress: async () => {
-            await procesarEntrada(datosCompletos, cantidadFinal);
-          },
-        },
-      ]
-    );*/
   };
 
   const handleQRRackEscaneado = (codigoQREscaneado) => {
-    if (!rackSugerido) {
-      Alert.alert("Error", "No hay rack seleccionado");
-      setEsperandoValidacionRack(false);
+    // ✅ CASO 1: Si es tipo "suelto", validar que el QR sea "SUELTO"
+    if (datosParaConfirmar?.datosCompletos?.tipoUbicacion === "suelto") {
+      if (codigoQREscaneado.toUpperCase() === "SUELTO") {
+        // Código correcto para suelto
+        showAlert({
+          title: "¡Validación Exitosa!",
+          message: `¿Confirmas la entrada de ${datosParaConfirmar.cantidadFinal} unidades del producto "${datosParaConfirmar.datosCompletos.nombre}" como producto SUELTO?`,
+          buttons: [
+            {
+              text: "Cancelar",
+              style: "cancel",
+              onPress: () => {
+                setAlertVisible(false);
+                setEsperandoValidacionRack(false);
+              },
+            },
+            {
+              text: "Confirmar",
+              onPress: async () => {
+                setAlertVisible(false);
+                setEsperandoValidacionRack(false);
+                // ✅ Procesar entrada sin rack (null)
+                await procesarEntrada(
+                  datosParaConfirmar.datosCompletos,
+                  datosParaConfirmar.cantidadFinal
+                );
+              },
+            },
+          ],
+        });
+      } else {
+        // Código incorrecto para suelto
+        showAlert({
+          title: "Código Incorrecto",
+          message: `Para productos SUELTOS debes escanear el código QR que dice "SUELTO". Código escaneado: ${codigoQREscaneado}`,
+          buttons: [
+            {
+              text: "Reintentar",
+              onPress: () => {
+                setAlertVisible(false);
+                setResetQRScanner(true);
+                setTimeout(() => setResetQRScanner(false), 100);
+              },
+            },
+            {
+              text: "Cancelar",
+              style: "cancel",
+              onPress: () => {
+                setAlertVisible(false);
+                setEsperandoValidacionRack(false);
+              },
+            },
+          ],
+        });
+      }
       return;
     }
 
-    // Comparar el código escaneado con el rack sugerido
+    // ✅ CASO 2: Si es tipo "rack", validar con el rack asignado
+    if (!rackSugerido) {
+      showAlert({
+        title: "Error",
+        message: "No hay rack seleccionado",
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => {
+              setAlertVisible(false);
+              setEsperandoValidacionRack(false);
+            },
+          },
+        ],
+      });
+      return;
+    }
+
     if (codigoQREscaneado === rackSugerido.codigo_rack) {
-      // Código correcto, proceder con la entrada
-      Alert.alert(
-        "¡Rack Validado!",
-        `Confirmas la entrada de ${datosParaConfirmar.cantidadFinal} unidades del producto "${datosParaConfirmar.datosCompletos.nombre}" en el rack ${rackSugerido.codigo_rack}?`,
-        [
+      showAlert({
+        title: "¡Rack Validado!",
+        message: `¿Confirmas la entrada de ${datosParaConfirmar.cantidadFinal} unidades del producto "${datosParaConfirmar.datosCompletos.nombre}" en el rack ${rackSugerido.codigo_rack}?`,
+        buttons: [
           {
             text: "Cancelar",
             style: "cancel",
-            onPress: () => setEsperandoValidacionRack(false),
+            onPress: () => {
+              setAlertVisible(false);
+              setEsperandoValidacionRack(false);
+            },
           },
           {
             text: "Confirmar",
             onPress: async () => {
+              setAlertVisible(false);
               setEsperandoValidacionRack(false);
               await procesarEntrada(
                 datosParaConfirmar.datosCompletos,
@@ -263,45 +297,62 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
               );
             },
           },
-        ]
-      );
+        ],
+      });
     } else {
-      // Código incorrecto
-      Alert.alert(
-        "Rack Incorrecto",
-        `El código escaneado (${codigoQREscaneado}) no coincide con el rack asignado (${rackSugerido.codigo_rack}). Por favor, escanea el código QR del rack correcto.`,
-        [
-          { text: "Reintentar", onPress: () => {} }, // Se queda esperando el QR correcto
+      showAlert({
+        title: "Rack Incorrecto",
+        message: `El código escaneado (${codigoQREscaneado}) no coincide con el rack asignado (${rackSugerido.codigo_rack}). Por favor, escanea el código QR del rack correcto.`,
+        buttons: [
+          {
+            text: "Reintentar",
+            onPress: () => {
+              setAlertVisible(false);
+              // AQUÍ ESTÁ EL CAMBIO CLAVE: Resetear el scanner QR
+              setResetQRScanner(true);
+              // Resetear el flag después de un breve delay
+              setTimeout(() => setResetQRScanner(false), 100);
+            },
+          },
           {
             text: "Cancelar",
             style: "cancel",
-            onPress: () => setEsperandoValidacionRack(false),
+            onPress: () => {
+              setAlertVisible(false);
+              setEsperandoValidacionRack(false);
+            },
           },
-        ]
-      );
+        ],
+      });
     }
   };
-
-  // En EscanearCostenaTemplate.js, actualiza procesarEntrada:
 
   const procesarEntrada = async (datosCompletos, cantidad) => {
     try {
       setUpdating(true);
+
+      const rackIdFinal =
+        datosCompletos.tipoUbicacion === "suelto"
+          ? null
+          : rackSugerido?.id || null;
+
       await procesarEntradaCompleta(
         datosCompletos.id,
         cantidad,
         datosCompletos.codigoBarras,
-        rackSugerido?.id || null,
-        datosCompletos.fechaCaducidad
+        rackIdFinal,
+        datosCompletos.fechaCaducidad,
+        datosCompletos.tipoUbicacion
       );
 
-      Alert.alert(
-        "¡Entrada Registrada!",
-        `Se han agregado ${cantidad} unidades del producto "${datosCompletos.nombre}"`,
-        [
+      showAlert({
+        title: "¡Entrada Registrada!",
+        message: `Se han agregado ${cantidad} unidades del producto "${datosCompletos.nombre}"`,
+        buttons: [
           {
             text: "Continuar",
             onPress: () => {
+              setAlertVisible(false);
               setProductoEncontrado(null);
               setCantidadManual("1");
             },
@@ -309,24 +360,27 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           {
             text: "Finalizar",
             onPress: () => {
+              setAlertVisible(false);
               if (onEntradaComplete) {
                 onEntradaComplete();
               }
             },
           },
-        ]
-      );
+        ],
+      });
     } catch (error) {
       console.error("Error procesando entrada:", error);
 
       if (error.message.includes("ya fue registrado")) {
-        Alert.alert(
-          "Código duplicado",
-          "La etiqueta escaneada ya fue registrada. Por favor verifica:",
-          [
+        showAlert({
+          title: "Código duplicado",
+          message:
+            "La etiqueta escaneada ya fue registrada. Por favor verifica:",
+          buttons: [
             {
               text: "Ver detalles",
               onPress: () => {
+                setAlertVisible(false);
                 navigation.navigate("HistorialEntradas", {
                   producto: productoEncontrado,
                 });
@@ -335,15 +389,24 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
             {
               text: "Continuar",
               style: "cancel",
-              onPress: () => setProductoEncontrado(null),
+              onPress: () => {
+                setAlertVisible(false);
+                setProductoEncontrado(null);
+              },
             },
-          ]
-        );
+          ],
+        });
       } else {
-        Alert.alert(
-          "Error",
-          `No se pudo procesar la entrada: ${error.message}`
-        );
+        showAlert({
+          title: "Error",
+          message: `No se pudo procesar la entrada: ${error.message}`,
+          buttons: [
+            {
+              text: "OK",
+              onPress: () => setAlertVisible(false),
+            },
+          ],
+        });
       }
     } finally {
       setUpdating(false);
@@ -385,12 +448,9 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
 
   return (
     <View style={styles.container}>
-      {/* Cámara especial para La Costeña */}
       {!productoEncontrado && (
         <CamaraCostena onProductoDetectado={handleProductoDetectado} />
       )}
-
-      {/* Información del producto encontrado */}
 
       {productoEncontrado && (
         <ProductoEscaneadoForm
@@ -409,36 +469,12 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           onQRRackEscaneado={handleQRRackEscaneado}
           rackEsperado={rackSugerido}
           onCancel={() => setEsperandoValidacionRack(false)}
+          resetScan={resetQRScanner}
+          tipoUbicacion={
+            datosParaConfirmar?.datosCompletos?.tipoUbicacion || "rack"
+          }
         />
       )}
-
-      {/* Controles 
-      <View style={styles.controlsContainer}>
-        {productoEncontrado && (
-          <>
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={handleConfirmEntrada}
-              disabled={updating}
-            >
-              <Text style={styles.confirmButtonText}>
-                {updating ? "Procesando..." : "Confirmar Entrada"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={handleCancelProducto}
-              disabled={updating}
-            >
-              <Text style={styles.cancelButtonText}>
-                Escanear otro producto
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-      */}
 
       {updating && (
         <View style={styles.updatingOverlay}>
@@ -490,91 +526,6 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     color: "white",
-    fontWeight: "bold",
-  },
-  productInfoContainer: {
-    backgroundColor: "white",
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  productTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#023E8A",
-    marginBottom: 8,
-  },
-  productName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 4,
-  },
-  productCode: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
-  },
-  productStock: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
-  },
-  productInfo: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
-  },
-  cantidadContainer: {
-    marginTop: 12,
-    marginBottom: 12,
-  },
-  cantidadLabel: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
-  },
-  cantidadInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 16,
-    backgroundColor: "#f9f9f9",
-  },
-  controlsContainer: {
-    padding: 20,
-    gap: 12,
-  },
-  confirmButton: {
-    backgroundColor: "#28a745",
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  confirmButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  cancelButton: {
-    backgroundColor: "#dc3545",
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  cancelButtonText: {
-    color: "white",
-    fontSize: 16,
     fontWeight: "bold",
   },
   updatingOverlay: {

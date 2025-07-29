@@ -9,6 +9,7 @@ const ValidacionRackQR = ({
   rackEsperado,
   onCancel,
   resetScan = false,
+  tipoUbicacion = "rack",
 }) => {
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -58,6 +59,20 @@ const ValidacionRackQR = ({
     onCancel();
   };
 
+  const getInstructionText = () => {
+    if (tipoUbicacion === "suelto") {
+      return "Escanea el código QR que dice 'SUELTO'";
+    }
+    return `Escanea el código QR del rack: ${rackEsperado?.codigo_rack}`;
+  };
+
+  const getRackCode = () => {
+    if (tipoUbicacion === "suelto") {
+      return "SUELTO";
+    }
+    return rackEsperado?.codigo_rack;
+  };
+
   return (
     <View style={styles.overlay}>
       <View style={styles.container}>
@@ -84,9 +99,14 @@ const ValidacionRackQR = ({
           <>
             <View style={styles.instructions}>
               <Text style={styles.instructionTitle}>
-                Escanea el código QR del rack:
+                {getInstructionText()}
               </Text>
-              <Text style={styles.rackCode}>{rackEsperado?.codigo_rack}</Text>
+              <Text style={styles.rackCode}> {getRackCode()}</Text>
+              {tipoUbicacion === "suelto" && (
+                <Text style={styles.sueltoHelper}>
+                  Busca el código QR especial para productos sueltos
+                </Text>
+              )}
             </View>
 
             {/* Marco de escaneo QR */}

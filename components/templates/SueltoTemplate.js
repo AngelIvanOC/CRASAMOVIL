@@ -5,20 +5,19 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
-  TouchableOpacity,
 } from "react-native";
 import { useState } from "react";
-import CardPiso from "../atomos/CardPiso";
-import { FontAwesome6 } from "@expo/vector-icons";
+import CardSuelto from "../atomos/CardSuelto";
 import CustomAlert from "../atomos/Alertas/CustomAlert";
+import { supabase } from "../../supabase/supabase";
+import { useRacks } from "../../hooks/useRacks";
 
-const PisoTemplate = ({
+const SueltoTemplate = ({
   historial,
   loading,
   producto,
-  navegation,
-  onBajarCaja,
-  getSugerenciaRack,
+  navigation,
+  onSubirSueltoItem,
 }) => {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertProps, setAlertProps] = useState({
@@ -26,18 +25,12 @@ const PisoTemplate = ({
     message: "",
     buttons: [],
   });
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("es-ES");
-  };
+  const { obtenerRacksDisponiblesPorMarca } = useRacks();
 
   const showAlert = ({ title, message, buttons = [] }) => {
     setAlertProps({ title, message, buttons });
     setAlertVisible(true);
 
-    // Si no tiene botones, cerrar automáticamente después de 4 segundos
     if (buttons.length === 0) {
       setTimeout(() => {
         setAlertVisible(false);
@@ -45,45 +38,43 @@ const PisoTemplate = ({
     }
   };
 
-  const handleBajarCajaWithSuggestion = async () => {
+  const handleSubirSueltoItem = async (sueltoItem) => {
     try {
-      // Obtener sugerencia (puede ser de rack o suelto)
-      const sugerencia = await getSugerenciaRack(producto.id);
+      // Obtener información del producto para saber la marca
+      const { data: productoInfo, error: productoError } = await supabase
+        .from("productos")
+        .select("marca_id")
+        .eq("id", producto.id)
+        .single();
 
-      if (!sugerencia || !sugerencia.cantidad || sugerencia.cantidad === 0) {
+      if (productoError) {
+        console.error("Error obteniendo info del producto:", productoError);
         showAlert({
-          title: "Sin inventario",
-          message:
-            "No existen cajas en rack ni suelto, registra para poder continuar",
-          buttons: [
-            {
-              text: "OK",
-              onPress: () => setAlertVisible(false),
-            },
-          ],
+          title: "Error",
+          message: "No se pudo obtener información del producto.",
+          buttons: [{ text: "OK", onPress: () => setAlertVisible(false) }],
         });
         return;
       }
 
-      let mensajeUbicacion = "";
-      if (sugerencia.origen === "rack" && sugerencia.racks) {
-        mensajeUbicacion = `\n\n🎯 Tomar de rack: ${sugerencia.racks.codigo_rack}`;
-      } else if (sugerencia.origen === "suelto") {
-        mensajeUbicacion = `\n\n📦 Tomar de suelto`;
+      // Usar el hook para obtener racks disponibles (mismo orden que en entradas)
+      const racks = await obtenerRacksDisponiblesPorMarca();
+
+      if (!racks || racks.length === 0) {
+        showAlert({
+          title: "Sin racks disponibles",
+          message: "No hay racks disponibles. Contacta al administrador.",
+          buttons: [{ text: "OK", onPress: () => setAlertVisible(false) }],
+        });
+        return;
       }
 
-      if (sugerencia.fecha_caducidad) {
-        mensajeUbicacion += `\n📅 Caduca: ${formatDate(
-          sugerencia.fecha_caducidad
-        )}`;
-      }
-      if (sugerencia.cantidad) {
-        mensajeUbicacion += `\n📦 Cantidad disponible: ${sugerencia.cantidad}`;
-      }
+      const rackSugerido = racks[0];
 
+      // Resto del código igual...
       showAlert({
-        title: `Bajar ${producto.nombre} al Piso`,
-        message: `¿Deseas proceder a bajar este producto al piso?${mensajeUbicacion}`,
+        title: "Confirmar movimiento",
+        message: `¿Subir esta caja de ${producto.nombre} al rack ${rackSugerido.codigo_rack}?\n\n📦 Cantidad: ${sueltoItem.cantidad}\n📅 Caduca: ${new Date(sueltoItem.fecha_caducidad).toLocaleDateString("es-ES")}\n🎯 Destino: Rack ${rackSugerido.codigo_rack}`,
         buttons: [
           {
             text: "Cancelar",
@@ -94,41 +85,29 @@ const PisoTemplate = ({
             text: "Continuar",
             onPress: () => {
               setAlertVisible(false);
-              onBajarCaja();
+              onSubirSueltoItem(sueltoItem, rackSugerido);
             },
           },
         ],
       });
     } catch (error) {
-      console.error("Error obteniendo sugerencia:", error);
-      // Si hay error obteniendo la sugerencia, continúa normalmente
+      console.error("Error en handleSubirSueltoItem:", error);
       showAlert({
-        title: `Bajar ${producto.nombre} al Piso`,
-        message: "¿Deseas proceder a bajar este producto al piso?",
-        buttons: [
-          {
-            text: "Cancelar",
-            style: "cancel",
-            onPress: () => setAlertVisible(false),
-          },
-          {
-            text: "Continuar",
-            onPress: () => {
-              setAlertVisible(false);
-              onBajarCaja();
-            },
-          },
-        ],
+        title: "Error",
+        message: "Ocurrió un error inesperado.",
+        buttons: [{ text: "OK", onPress: () => setAlertVisible(false) }],
       });
     }
   };
 
-  const renderItem = ({ item }) => <CardPiso item={item} />;
+  const renderItem = ({ item }) => (
+    <CardSuelto item={item} onSubirSuelto={handleSubirSueltoItem} />
+  );
 
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>
-        No hay productos en piso para este producto
+        No hay productos en suelto para este producto
       </Text>
     </View>
   );
@@ -140,18 +119,10 @@ const PisoTemplate = ({
           <Text style={styles.productName}>{producto.nombre}</Text>
           <Text style={styles.subtitle}>
             {historial.length} entrada{historial.length !== 1 ? "s" : ""} en
-            piso
+            suelto
           </Text>
         </View>
       </View>
-
-      <TouchableOpacity
-        style={styles.bajarButton}
-        onPress={handleBajarCajaWithSuggestion}
-      >
-        <FontAwesome6 name="box-archive" size={20} color="#023E8A" />
-        <Text style={styles.bajarButtonText}>Bajar a Piso</Text>
-      </TouchableOpacity>
     </View>
   );
 
@@ -250,22 +221,6 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
   },
-  bajarButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F7FAFC",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  bajarButtonText: {
-    fontSize: 12,
-    color: "#023E8A",
-    fontWeight: "500",
-    marginLeft: 4,
-  },
 });
 
-export default PisoTemplate;
+export default SueltoTemplate;

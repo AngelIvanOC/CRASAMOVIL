@@ -6,12 +6,12 @@ import {
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import { useProductos } from "../../hooks/useProductos";
 import CardProducto from "../atomos/CardProducto";
 import BuscadorConStats from "../moleculas/BuscadorConStats";
 import { FontAwesome } from "@expo/vector-icons";
+import CustomAlert from "../atomos/Alertas/CustomAlert";
 
 const ProductosTemplate = ({ route, navigation }) => {
   const { marca } = route.params;
@@ -21,6 +21,13 @@ const ProductosTemplate = ({ route, navigation }) => {
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef(null);
 
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertProps, setAlertProps] = useState({
+    title: "",
+    message: "",
+    buttons: [],
+  });
+
   // ✅ Función para manejar agregar producto
   const handleAgregarProducto = () => {
     navigation.navigate("AgregarProducto", { marca });
@@ -29,13 +36,15 @@ const ProductosTemplate = ({ route, navigation }) => {
   const handleEntradaPress = () => {
     const marcaNombre = marca.nombre?.toLowerCase();
     if (marcaNombre === "la costeña") {
-      Alert.alert(
-        "¿Tu etiqueta tiene caducidad y codigo de barras en la etiqueta?",
-        "",
-        [
+      showAlert({
+        title:
+          "¿Tu etiqueta tiene caducidad y el numero del código de barras visible en la etiqueta?",
+        message: "",
+        buttons: [
           {
             text: "No",
             onPress: () => {
+              setAlertVisible(false);
               navigation.navigate("EscanearEntrada", {
                 marca: marca,
                 onUpdate: () => {
@@ -47,6 +56,7 @@ const ProductosTemplate = ({ route, navigation }) => {
           {
             text: "Sí",
             onPress: () => {
+              setAlertVisible(false);
               navigation.navigate("EscanearCostena", {
                 marca: marca,
                 onUpdate: () => {
@@ -56,8 +66,7 @@ const ProductosTemplate = ({ route, navigation }) => {
             },
           },
         ],
-        { cancelable: true }
-      );
+      });
     } else if (
       // Verificar si la marca es "Jumex"
       marcaNombre === "jumex" ||
@@ -128,8 +137,24 @@ const ProductosTemplate = ({ route, navigation }) => {
     });
   }, [marca, navigation]);
 
+  const showAlert = ({ title, message, buttons = [] }) => {
+    setAlertProps({ title, message, buttons });
+    setAlertVisible(true);
+
+    // Si no tiene botones, cerrar automáticamente después de 4 segundos
+    if (buttons.length === 0) {
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 4000);
+    }
+  };
+
   const handleProductoPress = (producto) => {
     navigation.navigate("HistorialEntradas", { producto });
+  };
+
+  const handleSueltoPress = (producto) => {
+    navigation.navigate("Suelto", { producto });
   };
 
   const handlePisoPress = (producto) => {
@@ -140,6 +165,7 @@ const ProductosTemplate = ({ route, navigation }) => {
     <CardProducto
       producto={item}
       onHistorialPress={handleProductoPress}
+      onSueltoPress={handleSueltoPress}
       onPisoPress={handlePisoPress}
     />
   );
@@ -221,6 +247,14 @@ const ProductosTemplate = ({ route, navigation }) => {
           <FontAwesome name="barcode" size={24} />
         </Text>
       </TouchableOpacity>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertProps.title}
+        message={alertProps.message}
+        buttons={alertProps.buttons}
+        onClose={() => setAlertVisible(false)}
+      />
     </View>
   );
 };

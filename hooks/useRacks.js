@@ -14,8 +14,8 @@ export const useRacks = () => {
       .select("*")
       .eq("ocupado", false)
       .order("nivel", { ascending: true }) // A < B < C
-      .order("lado", { ascending: true }) // 1 < 2
-      .order("posicion", { ascending: true }); // 1 < 2 < ... < 40
+      .order("posicion", { ascending: true }) // 1 < 2 < ... < 40
+      .order("lado", { ascending: true }); // 1 < 2
 
     setLoading(false);
 

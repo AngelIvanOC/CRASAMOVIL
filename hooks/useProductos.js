@@ -29,6 +29,14 @@ export const useProductos = (marcaId = null) => {
                 id,
                 codigo_rack
               )
+            ),
+            piso (
+              id,
+              cantidad
+            ),
+            suelto (
+              id,
+              cantidad
             )
           `
         )
@@ -78,6 +86,14 @@ export const useProductos = (marcaId = null) => {
                 id,
                 codigo_rack
               )
+            ),
+            piso (
+              id,
+              cantidad
+            ),
+              suelto (
+              id,
+              cantidad
             )
     `
         )
@@ -194,7 +210,8 @@ export const useProductos = (marcaId = null) => {
     cantidadAgregar,
     codigoBarras = null,
     rackId = null,
-    fechaCaducidad = null
+    fechaCaducidad = null,
+    tipoUbicacion = "rack" // Por defecto, se asume que es un rack
   ) => {
     try {
       const codigoLimpio = codigoBarras
@@ -203,14 +220,28 @@ export const useProductos = (marcaId = null) => {
 
       if (codigoLimpio && codigoLimpio.length >= 5) {
         // Solo verificar si tiene longitud mínima
+        const tablaVerificar = tipoUbicacion === "suelto" ? "suelto" : "cajas";
+
         const { data, count } = await supabase
-          .from("cajas")
+          .from(tablaVerificar)
           .select("*", { count: "exact", head: true })
           .eq("codigo_barras", codigoLimpio);
 
         if (count > 0) {
           throw new Error(
             "Este código de barras ya fue registrado anteriormente"
+          );
+        }
+
+        const tablaOpuesta = tipoUbicacion === "suelto" ? "cajas" : "suelto";
+        const { data: dataOpuesta, count: countOpuesta } = await supabase
+          .from(tablaOpuesta)
+          .select("*", { count: "exact", head: true })
+          .eq("codigo_barras", codigoLimpio);
+
+        if (countOpuesta > 0) {
+          throw new Error(
+            `Este código de barras ya fue registrado en ${tablaOpuesta}`
           );
         }
       }
@@ -222,16 +253,26 @@ export const useProductos = (marcaId = null) => {
       const cantidadNueva = cantidadAnterior + cantidadAgregar;
       const cajasNuevas = cajasAnteriores + 1; // porque cada escaneo es 1 caja
 
+      const tablaDestino = tipoUbicacion === "suelto" ? "suelto" : "cajas";
+
       // 2. Insertar nueva entrada en cajas
       const fechaCaducidadFinal =
         fechaCaducidad || obtenerFechaCaducidadDesdeCodigo(codigoBarras);
-      const { error: insertError } = await supabase.from("cajas").insert({
+      const datosInsertar = {
         producto_id: productoId,
         cantidad: cantidadAgregar,
         fecha_caducidad: fechaCaducidadFinal,
-        rack_id: rackId,
-        codigo_barras: codigoLimpio, // ✅ Guardar el código escaneado
-      });
+        codigo_barras: codigoLimpio,
+      };
+
+      // ✅ Solo agregar rack_id si NO es suelto
+      if (tipoUbicacion !== "suelto") {
+        datosInsertar.rack_id = rackId;
+      }
+
+      const { error: insertError } = await supabase
+        .from(tablaDestino)
+        .insert(datosInsertar);
 
       if (insertError) throw insertError;
 
@@ -242,6 +283,7 @@ export const useProductos = (marcaId = null) => {
         cantidadNueva,
         cajasAnteriores,
         cajasNuevas,
+        tablaUsada: tablaDestino,
       };
     } catch (error) {
       console.error("Error procesando entrada completa:", error);

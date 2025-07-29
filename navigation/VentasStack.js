@@ -5,6 +5,7 @@ import VentasScreen from "../screens/VentasScreen";
 import DetalleVentaScreen from "../screens/DetalleVentasScreen";
 import EscanearVentaScreen from "../screens/EscanearVentaScreen";
 import PisoScreen from "../screens/PisoScreen";
+import BajarPisoScreen from "../screens/BajarPisoScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -41,6 +42,12 @@ export default function VentasStack() {
         name="Piso"
         component={PisoScreen}
         options={{ title: "Piso" }}
+      />
+
+      <Stack.Screen
+        name="BajarPiso"
+        component={BajarPisoScreen}
+        options={{ title: "Bajar a Piso" }}
       />
     </Stack.Navigator>
   );
