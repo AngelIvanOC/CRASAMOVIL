@@ -65,23 +65,37 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
       console.log("Intentando surtir detalle:", detalle.id);
 
       // Usar la función existente que ya maneja todo
-      await procesarSalidaCompleta(
+      const resultado = await procesarSalidaCompleta(
         detalle.productos.id,
         detalle.cantidad,
         null, // sin código de barras
         detalle.id // pasar el detalleId para actualizar escaneado
       );
 
-      // Actualizar el estado como completado
-      await updateEstadoDetalle(detalle.id, {
-        estado: "completado",
-      });
+      // Determinar el estado basado en lo que se logró surtir
+      const cantidadTotal = detalle.cantidad;
+      const escaneadoActual =
+        (detalle.escaneado || 0) + resultado.cantidadRestada;
 
-      await updateDetalle(detalle.id, {
-        estado: "completado",
-      });
+      let nuevoEstado;
+      if (escaneadoActual >= cantidadTotal) {
+        nuevoEstado = "completado";
+      } else if (escaneadoActual > 0) {
+        nuevoEstado = "en_progreso";
+      } else {
+        nuevoEstado = "incompleto";
+      }
 
-      Alert.alert("Éxito", "Producto surtido correctamente");
+      // Actualizar con el estado correcto
+      await updateEstadoDetalle(detalle.id, nuevoEstado);
+      await updateDetalle(detalle.id, { estado: nuevoEstado });
+
+      const mensaje =
+        escaneadoActual >= cantidadTotal
+          ? "Producto surtido correctamente"
+          : `Surtido parcial: ${escaneadoActual}/${cantidadTotal}`;
+
+      Alert.alert("Éxito", mensaje);
       fetchDetalleVentas(ventaId);
     } catch (error) {
       console.error("Error completo:", error);

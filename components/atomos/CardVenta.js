@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 
 const getEstadoStyles = (estado) => {
   switch (estado) {
@@ -28,8 +28,10 @@ const getEstadoStyles = (estado) => {
   }
 };
 
-const CardVenta = ({ venta, onPress }) => {
+const CardVenta = ({ venta, onPress, currentUser }) => {
   const estadoStyle = getEstadoStyles(venta.estado);
+
+  const isAssignedToOther = venta.usuario && venta.usuario !== currentUser?.id;
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -57,7 +59,13 @@ const CardVenta = ({ venta, onPress }) => {
   };
 
   return (
-    <View style={styles.card} activeOpacity={0.8}>
+    <View
+      style={[
+        styles.card,
+        isAssignedToOther && styles.disabledCard, // ← Estilo para cards deshabilitadas
+      ]}
+      activeOpacity={isAssignedToOther ? 1 : 0.8}
+    >
       <View style={styles.contentContainer}>
         {/* Contenido de dos columnas */}
         <View style={styles.infoContainer}>
@@ -119,8 +127,20 @@ const CardVenta = ({ venta, onPress }) => {
         {/* Botón */}
         <View style={styles.buttonWrapper}>
           <TouchableOpacity
-            style={styles.enterButton}
-            onPress={() => onPress(venta)}
+            style={[
+              styles.enterButton,
+              isAssignedToOther && styles.disabledButton,
+            ]}
+            onPress={() => {
+              if (isAssignedToOther) {
+                Alert.alert(
+                  "Venta Asignada",
+                  "Esta venta ya está siendo surtida por otro usuario."
+                );
+              } else {
+                onPress(venta);
+              }
+            }}
           >
             <Text style={styles.enterButtonText}>→</Text>
           </TouchableOpacity>
@@ -208,6 +228,13 @@ const styles = StyleSheet.create({
   estadoText: {
     fontSize: 12,
     fontWeight: "bold",
+  },
+  disabledCard: {
+    opacity: 0.6,
+    backgroundColor: "#f0f0f0",
+  },
+  disabledButton: {
+    backgroundColor: "#ccc",
   },
 });
 

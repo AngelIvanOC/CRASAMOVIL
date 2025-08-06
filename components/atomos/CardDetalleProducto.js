@@ -11,7 +11,7 @@ const CardDetalleProducto = ({ detalle, onPress }) => {
     switch (estado) {
       case "completado":
         return "#28a745"; // Verde - completado
-      case "pendiente":
+      case "en_progreso":
         return "#ffc107"; // Amarillo - procesando
       case "incompleto":
       default:
@@ -68,7 +68,7 @@ const CardDetalleProducto = ({ detalle, onPress }) => {
             ]}
           />*/}
           <View style={styles.productInfo}>
-            <Text style={styles.productName} numberOfLines={2}>
+            <Text style={styles.productName} numberOfLines={3}>
               {detalle.productos?.nombre || "Producto no disponible"}
             </Text>
             <Text style={styles.productCode}>

@@ -222,6 +222,8 @@ const CamaraCostena = ({ onProductoDetectado }) => {
   };
 
   const parseJumexProduct = (text) => {
+    console.log(cleanText);
+
     const product = {
       fecha: null,
       fechaCaducidad: null,
@@ -291,6 +293,11 @@ const CamaraCostena = ({ onProductoDetectado }) => {
     if (cantidadJumexMatch && cantidadJumexMatch[2]) {
       product.cantidad = parseInt(cantidadJumexMatch[2], 10);
     }
+
+    // Extraer código de barras (para más de 15 dígitos)
+    const codigoBarrasRegex = /\b(\d{15,})\b/;
+    const codigoBarrasMatch = cleanText.match(codigoBarrasRegex);
+    if (codigoBarrasMatch) product.codigoBarras = codigoBarrasMatch[1];
 
     // Formatear código de barras
     /*if (product.codigo && product.cantidad && product.fecha) {
@@ -415,10 +422,10 @@ const CamaraCostena = ({ onProductoDetectado }) => {
           Enfoca la etiqueta del producto dentro del marco
         </Text>
 
-        {/* 🔹 INDICADOR DE PLATAFORMA PARA DEBUG */}
+        {/* 🔹 INDICADOR DE PLATAFORMA PARA DEBUG 
         {__DEV__ && (
           <Text style={styles.platformText}>Plataforma: {Platform.OS}</Text>
-        )}
+        )}*/}
       </View>
 
       <View style={styles.controls}>

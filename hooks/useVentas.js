@@ -19,7 +19,10 @@ export const useVentas = (marcaId = null) => {
           marcas (
             id,
             nombre
-          )
+          ),
+          usuarios (
+          id,
+          correo)
         `
         )
         .order("fecha", { ascending: false });
@@ -56,7 +59,10 @@ export const useVentas = (marcaId = null) => {
           marcas (
             id,
             nombre
-          )
+          ),
+            usuarios (
+          id,
+          correo)
         `
         )
         .order("fecha", { ascending: false });
@@ -98,7 +104,11 @@ export const useVentas = (marcaId = null) => {
           marcas (
             id,
             nombre
-          )
+          ),
+           usuarios (
+              id,
+              correo
+            )
         `
         )
         .gte("fecha", startDate)
@@ -121,6 +131,42 @@ export const useVentas = (marcaId = null) => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const assignVentaToUser = async (ventaId, userAuthId) => {
+    try {
+      // Primero, obtener el ID del usuario desde la tabla usuarios usando id_auth
+      const { data: userData, error: userError } = await supabase
+        .from("usuarios")
+        .select("id_auth")
+        .eq("id_auth", userAuthId)
+        .single();
+
+      if (userError) {
+        console.error("Error finding user:", userError);
+        throw new Error("Usuario no encontrado en la base de datos");
+      }
+
+      if (!userData) {
+        throw new Error("Usuario no existe en la tabla usuarios");
+      }
+
+      // Ahora actualizar la venta con el id_auth del usuario
+      const { error } = await supabase
+        .from("ventas")
+        .update({ usuario: userData.id_auth, estado: "en_progreso", })
+        .eq("id", ventaId);
+
+      if (error) throw error;
+
+      // Refrescar la lista después de asignar
+      await fetchVentas(marcaId);
+
+      return true;
+    } catch (err) {
+      console.error("Error assigning venta to user:", err);
+      throw err;
     }
   };
 
@@ -186,5 +232,6 @@ export const useVentas = (marcaId = null) => {
     searchVentas,
     getVentasByDateRange,
     updateVentaEstado,
+    assignVentaToUser,
   };
 };

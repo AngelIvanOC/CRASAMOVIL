@@ -219,29 +219,61 @@ export const useProductos = (marcaId = null) => {
         : null;
 
       if (codigoLimpio && codigoLimpio.length >= 5) {
+        const producto = productos.find((p) => p.id === productoId);
+        if (!producto) {
+          throw new Error("Producto no encontrado");
+        }
+        const marcaId = producto.marca_id;
+
         // Solo verificar si tiene longitud mínima
         const tablaVerificar = tipoUbicacion === "suelto" ? "suelto" : "cajas";
 
-        const { data, count } = await supabase
+        const { data, error: queryError } = await supabase
           .from(tablaVerificar)
-          .select("*", { count: "exact", head: true })
-          .eq("codigo_barras", codigoLimpio);
+          .select(
+            `
+          *,
+          productos!inner (
+            id,
+            marca_id
+          )
+        `
+          )
+          .eq("codigo_barras", codigoLimpio)
+          .eq("productos.marca_id", marcaId);
 
-        if (count > 0) {
+        if (queryError) {
+          throw queryError;
+        }
+
+        if (data && data.length > 0) {
           throw new Error(
-            "Este código de barras ya fue registrado anteriormente"
+            "Este código de barras ya fue registrado anteriormente en esta marca"
           );
         }
 
         const tablaOpuesta = tipoUbicacion === "suelto" ? "cajas" : "suelto";
-        const { data: dataOpuesta, count: countOpuesta } = await supabase
+        const { data: dataOpuesta, error: queryErrorOpuesta } = await supabase
           .from(tablaOpuesta)
-          .select("*", { count: "exact", head: true })
-          .eq("codigo_barras", codigoLimpio);
+          .select(
+            `
+          *,
+          productos!inner (
+            id,
+            marca_id
+          )
+        `
+          )
+          .eq("codigo_barras", codigoLimpio)
+          .eq("productos.marca_id", marcaId);
 
-        if (countOpuesta > 0) {
+        if (queryErrorOpuesta) {
+          throw queryErrorOpuesta;
+        }
+
+        if (dataOpuesta && dataOpuesta.length > 0) {
           throw new Error(
-            `Este código de barras ya fue registrado en ${tablaOpuesta}`
+            `Este código de barras ya fue registrado en ${tablaOpuesta} para esta marca`
           );
         }
       }
@@ -427,10 +459,28 @@ export const useProductos = (marcaId = null) => {
         return true; // Códigos muy cortos no se verifican
       }
 
-      const { data, error, count } = await supabase
+      const marcaFiltro = marcaId || marcaId;
+
+      let query = supabase
         .from("cajas")
-        .select("*", { count: "exact", head: true })
+        .select(
+          `
+        *,
+        productos!inner (
+          id,
+          marca_id
+        )
+      `,
+          { count: "exact", head: true }
+        )
         .eq("codigo_barras", codigoLimpio);
+
+      // Solo filtrar por marca si se especifica
+      if (marcaFiltro) {
+        query = query.eq("productos.marca_id", marcaFiltro);
+      }
+
+      const { data, error, count } = await query;
 
       if (error) {
         console.error("Error en consulta:", error);

@@ -12,7 +12,8 @@ import { useVentas } from "../../hooks/useVentas";
 import CardVenta from "../atomos/CardVenta";
 import BuscadorConStats from "../moleculas/BuscadorConStats";
 import FiltrosFecha from "../moleculas/FiltrosFecha";
-import { useMemo } from "react";
+import { useMemo, useContext } from "react";
+import { AuthContext } from "../../context/AuthContext"; // ← Ajusta la ruta según tu estructura
 
 const VentasTemplate = ({ marcaId = null, navigation, route }) => {
   const {
@@ -27,6 +28,8 @@ const VentasTemplate = ({ marcaId = null, navigation, route }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [currentFilter, setCurrentFilter] = useState("todos");
   const searchTimeoutRef = useRef(null);
+  const { user } = useContext(AuthContext);
+  const { assignVentaToUser } = useVentas(marcaId); // ← Agregar esta función
 
   const performSearch = useCallback(
     async (term) => {
@@ -123,11 +126,42 @@ const VentasTemplate = ({ marcaId = null, navigation, route }) => {
   }, []);
 
   const handleVentaPress = (venta) => {
-    navigation.navigate("DetalleVenta", { venta });
+    // Si la venta ya está asignada al usuario actual, ir directo al detalle
+    if (venta.usuario === user?.id) {
+      navigation.navigate("DetalleVenta", { venta });
+      return;
+    }
+
+    // Si la venta no está asignada, mostrar alerta de confirmación
+    if (!venta.usuario) {
+      Alert.alert(
+        "Asignar Venta",
+        `Se te asignará la venta con código: ${venta.codigo || venta.id}. ¿Estás de acuerdo en comenzar?`,
+        [
+          {
+            text: "Cancelar",
+            style: "cancel",
+          },
+          {
+            text: "Aceptar",
+            onPress: async () => {
+              try {
+                await assignVentaToUser(venta.id, user.id);
+                navigation.navigate("DetalleVenta", {
+                  venta: { ...venta, usuario: user.id },
+                });
+              } catch (error) {
+                Alert.alert("Error", "No se pudo asignar la venta");
+              }
+            },
+          },
+        ]
+      );
+    }
   };
 
   const renderItem = ({ item }) => (
-    <CardVenta venta={item} onPress={handleVentaPress} />
+    <CardVenta venta={item} onPress={handleVentaPress} currentUser={user} />
   );
 
   const renderEmpty = () => (

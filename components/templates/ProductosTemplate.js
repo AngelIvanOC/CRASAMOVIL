@@ -36,7 +36,7 @@ const ProductosTemplate = ({ route, navigation }) => {
   const handleEntradaPress = () => {
     const marcaNombre = marca.nombre?.toLowerCase();
     if (marcaNombre === "la costeña") {
-      showAlert({
+      /*showAlert({
         title:
           "¿Tu etiqueta tiene caducidad y el numero del código de barras visible en la etiqueta?",
         message: "",
@@ -66,12 +66,58 @@ const ProductosTemplate = ({ route, navigation }) => {
             },
           },
         ],
+      });*/
+      // Comportamiento normal para otras marcas
+      navigation.navigate("EscanearEntrada", {
+        marca: marca,
+        onUpdate: () => {
+          fetchProductos(marca.id);
+        },
       });
-    } else if (
-      // Verificar si la marca es "Jumex"
-      marcaNombre === "jumex" ||
-      marcaNombre === "JUMEX"
-    ) {
+    } else if (marcaNombre === "crasa" || marcaNombre === "CRASA") {
+      showAlert({
+        title: "¿De que marca es tu producto?",
+        message: "",
+        buttons: [
+          {
+            text: "LA COSTEÑA",
+            onPress: () => {
+              setAlertVisible(false);
+              navigation.navigate("EscanearEntrada", {
+                marca: marca,
+                onUpdate: () => {
+                  fetchProductos(marca.id);
+                },
+              });
+            },
+          },
+          {
+            text: "JUMEX",
+            onPress: () => {
+              setAlertVisible(false);
+              navigation.navigate("EscanearCostena", {
+                marca: marca,
+                onUpdate: () => {
+                  fetchProductos(marca.id);
+                },
+              });
+            },
+          },
+          {
+            text: "CON",
+            onPress: () => {
+              setAlertVisible(false);
+              navigation.navigate("EscanearEntrada", {
+                marca: marca,
+                onUpdate: () => {
+                  fetchProductos(marca.id);
+                },
+              });
+            },
+          },
+        ],
+      });
+    } else if (marcaNombre === "jumex" || marcaNombre === "JUMEX") {
       navigation.navigate("EscanearCostena", {
         marca: marca,
         onUpdate: () => {

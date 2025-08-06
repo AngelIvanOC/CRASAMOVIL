@@ -29,7 +29,11 @@ const CardProducto = ({
     ? producto.suelto.length
     : 0;
 
+  const registrosPiso = Array.isArray(producto.piso) ? producto.piso.length : 0;
+
   const totalTarimasConSuelto = cantidadTarimas + registrosSuelto;
+
+  const total = cantidadPiso + cantidadSuelto + producto.cantidad;
 
   return (
     <View style={styles.card}>
@@ -61,6 +65,19 @@ const CardProducto = ({
           >
             <FontAwesome6 name="truck-ramp-box" size={15} color="#023E8A" />
           </TouchableOpacity>
+
+          <Text style={styles.rack}>
+            {producto.cajas && producto.cajas.length > 0
+              ? [
+                  ...new Set(
+                    producto.cajas
+                      .filter((caja) => caja.cantidad > 0)
+                      .map((caja) => caja.racks?.codigo_rack)
+                      .filter(Boolean)
+                  ),
+                ].join(", ") || "N/A"
+              : "N/A"}
+          </Text>
         </View>
       </View>
 
@@ -70,6 +87,11 @@ const CardProducto = ({
         </Text>
 
         <View style={styles.footer}>
+          <View style={styles.cantidadContainer}>
+            <Text style={styles.cantidadLabel}>Total</Text>
+            <Text style={styles.cantidad}>{total || 0}</Text>
+          </View>
+
           <View style={styles.cantidadContainer}>
             <Text style={styles.cantidadLabel}>Tarimas</Text>
             <Text style={styles.cantidad}>{totalTarimasConSuelto || 0}</Text>
@@ -89,19 +111,6 @@ const CardProducto = ({
             <Text style={styles.cantidadLabel}>Sueltos</Text>
             <Text style={styles.cantidad}>{cantidadSuelto}</Text>
           </View>
-
-          <Text style={styles.rack}>
-            {producto.cajas && producto.cajas.length > 0
-              ? [
-                  ...new Set(
-                    producto.cajas
-                      .filter((caja) => caja.cantidad > 0)
-                      .map((caja) => caja.racks?.codigo_rack)
-                      .filter(Boolean)
-                  ),
-                ].join(", ") || "N/A"
-              : "N/A"}
-          </Text>
         </View>
       </View>
     </View>
