@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 
 const getEstadoStyles = (estado) => {
   switch (estado) {
@@ -31,8 +31,6 @@ const getEstadoStyles = (estado) => {
 const CardVenta = ({ venta, onPress, currentUser }) => {
   const estadoStyle = getEstadoStyles(venta.estado);
 
-  const isAssignedToOther = venta.usuario && venta.usuario !== currentUser?.id;
-
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -52,20 +50,8 @@ const CardVenta = ({ venta, onPress, currentUser }) => {
     });
   };
 
-  const getStatusColor = () => {
-    if (venta.cantidad_total > 100) return "#28a745";
-    if (venta.cantidad_total > 50) return "#ffc107";
-    return "#dc3545";
-  };
-
   return (
-    <View
-      style={[
-        styles.card,
-        isAssignedToOther && styles.disabledCard, // ← Estilo para cards deshabilitadas
-      ]}
-      activeOpacity={isAssignedToOther ? 1 : 0.8}
-    >
+    <View style={styles.card}>
       <View style={styles.contentContainer}>
         {/* Contenido de dos columnas */}
         <View style={styles.infoContainer}>
@@ -127,20 +113,9 @@ const CardVenta = ({ venta, onPress, currentUser }) => {
         {/* Botón */}
         <View style={styles.buttonWrapper}>
           <TouchableOpacity
-            style={[
-              styles.enterButton,
-              isAssignedToOther && styles.disabledButton,
-            ]}
-            onPress={() => {
-              if (isAssignedToOther) {
-                Alert.alert(
-                  "Venta Asignada",
-                  "Esta venta ya está siendo surtida por otro usuario."
-                );
-              } else {
-                onPress(venta);
-              }
-            }}
+            style={styles.enterButton}
+            onPress={() => onPress(venta)}
+            activeOpacity={0.8}
           >
             <Text style={styles.enterButtonText}>→</Text>
           </TouchableOpacity>
@@ -186,12 +161,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     marginBottom: 2,
   },
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 6,
-  },
   boldText: {
     fontSize: 13,
     fontWeight: "bold",
@@ -219,7 +188,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
   },
-
   estadoBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -228,13 +196,6 @@ const styles = StyleSheet.create({
   estadoText: {
     fontSize: 12,
     fontWeight: "bold",
-  },
-  disabledCard: {
-    opacity: 0.6,
-    backgroundColor: "#f0f0f0",
-  },
-  disabledButton: {
-    backgroundColor: "#ccc",
   },
 });
 

@@ -8,13 +8,26 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
-  // ⬇️ Intentar restaurar sesión al iniciar la app
   useEffect(() => {
     const restoreSession = async () => {
-      const sessionData = await AsyncStorage.getItem("userSession");
-      if (sessionData) {
-        const parsed = JSON.parse(sessionData);
-        setUser(parsed);
+      try {
+        const sessionData = await AsyncStorage.getItem("userSession");
+        if (sessionData) {
+          const parsedSession = JSON.parse(sessionData);
+
+          // ⬇️ Solo una llamada a setSession
+          await supabase.auth.setSession({
+            access_token: parsedSession.access_token,
+            refresh_token: parsedSession.refresh_token,
+          });
+
+          setUser(parsedSession.user);
+        }
+      } catch (error) {
+        console.log("Error restaurando sesión:", error);
+        // Si falla, limpiar AsyncStorage
+        await AsyncStorage.removeItem("userSession");
+        setUser(null);
       }
     };
 
@@ -31,11 +44,8 @@ export const AuthProvider = ({ children }) => {
       if (error) throw error;
 
       setUser(data.user);
-
-      // ⬇️ Guarda sesión en AsyncStorage
-      await AsyncStorage.setItem("userSession", JSON.stringify(data.user));
+      await AsyncStorage.setItem("userSession", JSON.stringify(data.session));
     } catch (err) {
-      //console.error("Login failed:", err.message);
       if (onError) {
         onError(err.message);
       }

@@ -1,13 +1,21 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase/supabase";
+import { useUsuarios } from "./useUsuarios";
 
 export const useVentas = (marcaId = null) => {
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const { usuarioActual } = useUsuarios();
+
   const fetchVentas = async (marcaId = null) => {
     try {
+      if (!usuarioActual?.id_auth) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
@@ -25,6 +33,7 @@ export const useVentas = (marcaId = null) => {
           correo)
         `
         )
+        .eq("usuario", usuarioActual?.id_auth)
         .order("fecha", { ascending: false });
 
       if (marcaId) {
@@ -65,6 +74,8 @@ export const useVentas = (marcaId = null) => {
           correo)
         `
         )
+        .eq("usuario", usuarioActual?.id_auth)
+
         .order("fecha", { ascending: false });
 
       if (marcaId) {
@@ -113,6 +124,7 @@ export const useVentas = (marcaId = null) => {
         )
         .gte("fecha", startDate)
         .lte("fecha", endDate)
+        .eq("usuario", usuarioActual?.id_auth)
         .order("fecha", { ascending: false });
 
       if (marcaId) {
@@ -155,7 +167,7 @@ export const useVentas = (marcaId = null) => {
       // Ahora actualizar la venta con el id_auth del usuario
       const { error } = await supabase
         .from("ventas")
-        .update({ usuario: userData.id_auth, estado: "en_progreso", })
+        .update({ usuario: userData.id_auth, estado: "en_progreso" })
         .eq("id", ventaId);
 
       if (error) throw error;
@@ -221,8 +233,10 @@ export const useVentas = (marcaId = null) => {
   };
 
   useEffect(() => {
-    fetchVentas(marcaId);
-  }, [marcaId]);
+    if (usuarioActual?.id_auth) {
+      fetchVentas(marcaId);
+    }
+  }, [usuarioActual?.id_auth]); // ← Quita marcaId de aquí para evitar bucles
 
   return {
     ventas,

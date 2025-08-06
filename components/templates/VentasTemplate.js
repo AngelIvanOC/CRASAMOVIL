@@ -13,7 +13,7 @@ import CardVenta from "../atomos/CardVenta";
 import BuscadorConStats from "../moleculas/BuscadorConStats";
 import FiltrosFecha from "../moleculas/FiltrosFecha";
 import { useMemo, useContext } from "react";
-import { AuthContext } from "../../context/AuthContext"; // ← Ajusta la ruta según tu estructura
+import { useUsuarios } from "../../hooks/useUsuarios";
 
 const VentasTemplate = ({ marcaId = null, navigation, route }) => {
   const {
@@ -28,7 +28,7 @@ const VentasTemplate = ({ marcaId = null, navigation, route }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [currentFilter, setCurrentFilter] = useState("todos");
   const searchTimeoutRef = useRef(null);
-  const { user } = useContext(AuthContext);
+  const { usuarioActual } = useUsuarios();
   const { assignVentaToUser } = useVentas(marcaId); // ← Agregar esta función
 
   const performSearch = useCallback(
@@ -127,7 +127,7 @@ const VentasTemplate = ({ marcaId = null, navigation, route }) => {
 
   const handleVentaPress = (venta) => {
     // Si la venta ya está asignada al usuario actual, ir directo al detalle
-    if (venta.usuario === user?.id) {
+    if (venta.usuario === usuarioActual?.id_auth) {
       navigation.navigate("DetalleVenta", { venta });
       return;
     }
@@ -146,9 +146,9 @@ const VentasTemplate = ({ marcaId = null, navigation, route }) => {
             text: "Aceptar",
             onPress: async () => {
               try {
-                await assignVentaToUser(venta.id, user.id);
+                await assignVentaToUser(venta.id, usuarioActual.id_auth);
                 navigation.navigate("DetalleVenta", {
-                  venta: { ...venta, usuario: user.id },
+                  venta: { ...venta, usuario: usuarioActual.id_auth },
                 });
               } catch (error) {
                 Alert.alert("Error", "No se pudo asignar la venta");
@@ -161,7 +161,11 @@ const VentasTemplate = ({ marcaId = null, navigation, route }) => {
   };
 
   const renderItem = ({ item }) => (
-    <CardVenta venta={item} onPress={handleVentaPress} currentUser={user} />
+    <CardVenta
+      venta={item}
+      onPress={handleVentaPress}
+      currentUser={usuarioActual}
+    />
   );
 
   const renderEmpty = () => (
