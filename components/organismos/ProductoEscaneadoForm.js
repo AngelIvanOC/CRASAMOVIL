@@ -18,6 +18,7 @@ const ProductoEscaneadoForm = ({
   racksDisponibles,
   onRackChange,
   updating = false,
+  setUpdating,
 }) => {
   // Estados para los campos editables
   const [cantidadManual, setCantidadManual] = useState("");
@@ -130,7 +131,9 @@ const ProductoEscaneadoForm = ({
     return errors;
   };
 
-  const handleConfirm = () => {
+  // En ProductoEscaneadoForm.js
+
+  const handleConfirm = async () => {
     const errors = validateFields();
 
     if (errors.length > 0) {
@@ -148,22 +151,38 @@ const ProductoEscaneadoForm = ({
     }
 
     const cantidadFinal = parseInt(cantidadManual);
+    const ubicacion =
+      tipoUbicacion === "suelto" ? "SUELTO" : rackSugerido?.codigo_rack;
 
-    // Crear objeto con todos los datos editables
-    const datosCompletos = {
-      ...productoEncontrado,
-      cantidadEscaneada: cantidadFinal,
-      codigoBarras: codigoBarrasManual,
-      fechaCaducidad: fechaCaducidadManual,
-      tipoUbicacion: tipoUbicacion,
-      rackAsignado: tipoUbicacion === "rack" ? rackSugerido : null,
-      datosOCR: {
-        ...productoEncontrado.datosOCR,
-        cantidad: cantidadFinal,
-      },
-    };
+    try {
+      setUpdating(true); // Usa la prop setUpdating
 
-    onConfirmEntrada(datosCompletos, cantidadFinal);
+      // Crear objeto con todos los datos
+      const datosCompletos = {
+        ...productoEncontrado,
+        cantidadEscaneada: cantidadFinal,
+        codigoBarras: codigoBarrasManual,
+        fechaCaducidad: fechaCaducidadManual,
+        tipoUbicacion: tipoUbicacion,
+        rackAsignado: tipoUbicacion === "rack" ? rackSugerido : null,
+      };
+
+      // Pasar los datos al template padre para que maneje el pendiente
+      onConfirmEntrada(datosCompletos, cantidadFinal);
+    } catch (error) {
+      showAlert({
+        title: "Error",
+        message: `No se pudo procesar: ${error.message}`,
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => setAlertVisible(false),
+          },
+        ],
+      });
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleRackSelection = () => {

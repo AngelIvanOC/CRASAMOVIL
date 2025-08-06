@@ -16,6 +16,8 @@ import PisoScreen from "../screens/PisoScreen";
 import BajarPisoScreen from "../screens/BajarPisoScreen";
 import SueltoScreen from "../screens/SueltoScreen";
 import SubirSueltoScreen from "../screens/SubirSueltoScreen";
+import PendientesScreen from "../screens/PendientesScreen";
+import ConfirmarPendienteScreen from "../screens/ConfirmarPendienteScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -127,6 +129,18 @@ export default function StackNavigator() {
         name="SubirSuelto"
         component={SubirSueltoScreen}
         options={{ title: "Subir Suelto" }}
+      />
+
+      <Stack.Screen
+        name="PendienteScreen"
+        component={PendientesScreen}
+        options={{ title: "PendientesScreen" }}
+      />
+
+      <Stack.Screen
+        name="ConfirmarPendienteScreen"
+        component={ConfirmarPendienteScreen}
+        options={{ title: "Confirmar Pendientes" }}
       />
 
       {/* Mantén tus otras pantallas si las necesitas */}

@@ -102,11 +102,6 @@ const ValidacionRackQR = ({
                 {getInstructionText()}
               </Text>
               <Text style={styles.rackCode}> {getRackCode()}</Text>
-              {tipoUbicacion === "suelto" && (
-                <Text style={styles.sueltoHelper}>
-                  Busca el código QR especial para productos sueltos
-                </Text>
-              )}
             </View>
 
             {/* Marco de escaneo QR */}
@@ -118,12 +113,6 @@ const ValidacionRackQR = ({
             </View>
           </>
         )}
-
-        {/* Botón de cancelar */}
-        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-          <Ionicons name="close" size={24} color="white" />
-          <Text style={styles.cancelButtonText}>Cancelar</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );

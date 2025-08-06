@@ -40,7 +40,7 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   const [esperandoSeleccionUbicacion, setEsperandoSeleccionUbicacion] =
     useState(false);
   const [productoTemporal, setProductoTemporal] = useState(null);
-  
+
   const [alertProps, setAlertProps] = useState({
     title: "",
     message: "",
@@ -51,6 +51,7 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     fetchProductos,
     procesarEntradaCompleta,
     verificarCodigoBarrasUnico,
+    agregarPendiente,
   } = useProductos(marca?.id);
   const alreadyHandledRef = useRef(false);
 
@@ -277,39 +278,58 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     }
   };
 
-  const handleConfirmEntrada = (datosCompletos, cantidadFinal) => {
-    /*if (!productoEncontrado) return;
+  const handleConfirmEntrada = async (datosCompletos, cantidadFinal) => {
+    try {
+      setUpdating(true);
 
-    const cantidadFinal =
-      parseInt(cantidadManual) || productoEncontrado.cantidadEscaneada;
+      const ubicacion =
+        datosCompletos.tipoUbicacion === "suelto"
+          ? "SUELTO"
+          : rackSugerido?.codigo_rack;
 
-    if (cantidadFinal <= 0) {
-      Alert.alert("Error", "La cantidad debe ser mayor a 0");
-      return;
-    }*/
+      await agregarPendiente(
+        datosCompletos.id,
+        cantidadFinal,
+        datosCompletos.codigoBarras,
+        ubicacion,
+        datosCompletos.fechaCaducidad
+      );
 
-    setDatosParaConfirmar({ datosCompletos, cantidadFinal });
-    setEsperandoValidacionRack(true);
-
-    /*Alert.alert(
-      "Confirmar Entrada",
-      `¿Confirmas la entrada de ${cantidadFinal} unidades del producto "${
-        datosCompletos.nombre
-      }"?\n\nCantidad actual: ${
-        datosCompletos.cantidad
-      }\nCantidad después de la entrada: ${
-        datosCompletos.cantidad + cantidadFinal
-      }`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Confirmar",
-          onPress: async () => {
-            await procesarEntrada(datosCompletos, cantidadFinal);
+      showAlert({
+        title: "¡Pendiente creado!",
+        message: `Se ha creado un pendiente para ${cantidadFinal} unidades de "${datosCompletos.nombre}"`,
+        buttons: [
+          {
+            text: "Salir",
+            onPress: () => {
+              setAlertVisible(false);
+              navigation.goBack();
+              setProductoEncontrado(null);
+            },
           },
-        },
-      ]
-    );*/
+          {
+            text: "Continuar",
+            onPress: () => {
+              setAlertVisible(false);
+              setProductoEncontrado(null);
+            },
+          },
+        ],
+      });
+    } catch (error) {
+      showAlert({
+        title: "Error",
+        message: `No se pudo crear el pendiente: ${error.message}`,
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => setAlertVisible(false),
+          },
+        ],
+      });
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleQRRackEscaneado = (codigoQREscaneado) => {
@@ -612,6 +632,7 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           racksDisponibles={racksDisponibles}
           onRackChange={setRackSugerido}
           updating={updating}
+          setUpdating={setUpdating}
         />
       )}
 

@@ -33,6 +33,7 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     fetchProductos,
     procesarEntradaCompleta,
     verificarCodigoBarrasUnico,
+    agregarPendiente,
   } = useProductos(marca?.id);
   const [alertVisible, setAlertVisible] = useState(false);
 
@@ -191,9 +192,59 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     }
   };
 
-  const handleConfirmEntrada = (datosCompletos, cantidadFinal) => {
-    setDatosParaConfirmar({ datosCompletos, cantidadFinal });
-    setEsperandoValidacionRack(true);
+  // En EscanearCostenaTemplate.js
+  const handleConfirmEntrada = async (datosCompletos, cantidadFinal) => {
+    try {
+      setUpdating(true);
+
+      const ubicacion =
+        datosCompletos.tipoUbicacion === "suelto"
+          ? "SUELTO"
+          : rackSugerido?.codigo_rack;
+
+      await agregarPendiente(
+        datosCompletos.id,
+        cantidadFinal,
+        datosCompletos.codigoBarras,
+        ubicacion,
+        datosCompletos.fechaCaducidad
+      );
+
+      showAlert({
+        title: "¡Pendiente creado!",
+        message: `Se ha creado un pendiente para ${cantidadFinal} unidades de "${datosCompletos.nombre}"`,
+        buttons: [
+          {
+            text: "Salir",
+            onPress: () => {
+              setAlertVisible(false);
+              navigation.goBack();
+              setProductoEncontrado(null);
+            },
+          },
+          {
+            text: "Continuar",
+            onPress: () => {
+              setAlertVisible(false);
+              setProductoEncontrado(null);
+            },
+          },
+        ],
+      });
+    } catch (error) {
+      showAlert({
+        title: "Error",
+        message: `No se pudo crear el pendiente: ${error.message}`,
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => setAlertVisible(false),
+          },
+        ],
+      });
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleQRRackEscaneado = (codigoQREscaneado) => {
@@ -461,6 +512,7 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           racksDisponibles={racksDisponibles}
           onRackChange={setRackSugerido}
           updating={updating}
+          setUpdating={setUpdating}
         />
       )}
 

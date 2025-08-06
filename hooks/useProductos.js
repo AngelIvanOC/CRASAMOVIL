@@ -494,6 +494,127 @@ export const useProductos = (marcaId = null) => {
     }
   };
 
+  // En useProductos.js
+
+  const agregarPendiente = async (
+    productoId,
+    cantidad,
+    codigoBarras = null,
+    ubicacion,
+    fechaCaducidad = null
+  ) => {
+    try {
+      const { data, error } = await supabase
+        .from("pendientes")
+        .insert([
+          {
+            producto_id: productoId,
+            cantidad: cantidad,
+            codigo_barras: codigoBarras,
+            ubicacion: ubicacion,
+            fecha_caducidad: fechaCaducidad,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("Error agregando pendiente:", error);
+      throw error;
+    }
+  };
+
+  const obtenerPendientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("pendientes")
+        .select(
+          `
+        *,
+        productos (
+          id,
+          nombre,
+          codigo,
+          marcas (
+            id,
+            nombre,
+            logo
+          )
+        )
+      `
+        )
+        .order("fecha_creacion", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("Error obteniendo pendientes:", error);
+      throw error;
+    }
+  };
+
+  const confirmarPendiente = async (pendienteId) => {
+    try {
+      // 1. Obtener el pendiente
+      const { data: pendiente, error: pendienteError } = await supabase
+        .from("pendientes")
+        .select("*")
+        .eq("id", pendienteId)
+        .single();
+
+      if (pendienteError) throw pendienteError;
+
+      // 2. Determinar si va a cajas o suelto
+      const esSuelto = pendiente.ubicacion === "SUELTO";
+      const tablaDestino = esSuelto ? "suelto" : "cajas";
+
+      const datosInsertar = {
+        producto_id: pendiente.producto_id,
+        cantidad: pendiente.cantidad,
+        fecha_caducidad: pendiente.fecha_caducidad,
+        codigo_barras: pendiente.codigo_barras,
+      };
+
+      // Solo agregar rack_id si no es suelto
+      if (!esSuelto) {
+        // Obtener el rack_id basado en el código de ubicación
+        const { data: rack, error: rackError } = await supabase
+          .from("racks")
+          .select("id")
+          .eq("codigo_rack", pendiente.ubicacion)
+          .single();
+
+        if (rackError) throw rackError;
+        if (!rack)
+          throw new Error(`No se encontró el rack ${pendiente.ubicacion}`);
+
+        datosInsertar.rack_id = rack.id;
+      }
+
+      // 3. Insertar en la tabla destino
+      const { error: insertError } = await supabase
+        .from(tablaDestino)
+        .insert(datosInsertar);
+
+      if (insertError) throw insertError;
+
+      // 4. Eliminar el pendiente
+      const { error: deleteError } = await supabase
+        .from("pendientes")
+        .delete()
+        .eq("id", pendienteId);
+
+      if (deleteError) throw deleteError;
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error confirmando pendiente:", error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchProductos();
   }, [marcaId]);
@@ -509,5 +630,8 @@ export const useProductos = (marcaId = null) => {
     procesarSalidaCompleta,
     obtenerFechaCaducidadDesdeCodigo,
     verificarCodigoBarrasUnico,
+    agregarPendiente,
+    obtenerPendientes,
+    confirmarPendiente,
   };
 };
