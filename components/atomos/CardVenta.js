@@ -77,8 +77,8 @@ const CardVenta = ({ venta, onPress, currentUser }) => {
             </View>
 
             <View style={styles.column}>
-              <Text style={styles.boldText}>{formatDate(venta.fecha)}</Text>
-              <Text style={styles.subText}>{formatTime(venta.fecha)}</Text>
+              <Text style={styles.boldText}>Fecha</Text>
+              <Text style={styles.subText}>{formatDate(venta.fecha)}</Text>
             </View>
           </View>
 
