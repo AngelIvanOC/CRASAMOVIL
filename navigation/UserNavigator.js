@@ -13,9 +13,10 @@ const Tab = createBottomTabNavigator();
 
 const UserNavigator = () => {
   const { usuarioActual } = useUsuarios();
+  const rolId = usuarioActual?.roles?.id;
 
-  // Si el usuario tiene rol 4, solo mostramos Pendientes y Configuración
-  const isRole4 = usuarioActual?.roles?.id === 4;
+  const isRole4 = rolId === 4; // Solo "Pendientes" y "Configuración"
+  const isAyudante = rolId === 5; // Solo "Ventas" y "Configuración"
 
   return (
     <Tab.Navigator
@@ -30,13 +31,43 @@ const UserNavigator = () => {
         },
       }}
     >
-      {!isRole4 && (
+      {/* Rol 4: solo Pendientes y Configuración */}
+      {isRole4 && (
+        <Tab.Screen
+          name="Pendientes"
+          component={MontacargaStack}
+          options={{
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons
+                name="elevator-up"
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+      )}
+
+      {/* Rol 5 (Ayudante): solo Ventas y Configuración */}
+      {isAyudante && (
+        <Tab.Screen
+          name="Ventas"
+          component={VentasStack}
+          options={{
+            tabBarIcon: ({ color }) => (
+              <Feather name="shopping-cart" size={24} color={color} />
+            ),
+          }}
+        />
+      )}
+
+      {/* Otros roles: Almacén, Ventas, Prioridades, Configuración */}
+      {!isRole4 && !isAyudante && (
         <>
           <Tab.Screen
             name="Almacen"
             component={StackNavigator}
             options={{
-              headerShown: false,
               tabBarIcon: ({ color }) => (
                 <Feather name="package" size={24} color={color} />
               ),
@@ -65,22 +96,7 @@ const UserNavigator = () => {
         </>
       )}
 
-      {isRole4 && (
-        <Tab.Screen
-          name="Pendientes"
-          component={MontacargaStack}
-          options={{
-            tabBarIcon: ({ color }) => (
-              <MaterialCommunityIcons
-                name="elevator-up"
-                size={24}
-                color={color}
-              />
-            ),
-          }}
-        />
-      )}
-
+      {/* Configuración para todos */}
       <Tab.Screen
         name="Configuracion"
         component={UserHomeScreen}
