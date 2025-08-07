@@ -19,22 +19,50 @@ export const useVentas = (marcaId = null) => {
       setLoading(true);
       setError(null);
 
-      let query = supabase
-        .from("ventas")
-        .select(
-          `
+      let query;
+
+      if (usuarioActual.roles?.id === 5) {
+        // AYUDANTE: buscar por tabla intermedia
+        const { data: ayudanteVentas, error: ayudanteError } = await supabase
+          .from("ayudantes_venta")
+          .select("venta_id")
+          .eq("usuario_id", usuarioActual.id_auth);
+
+        if (ayudanteError) throw ayudanteError;
+
+        const ventaIds = ayudanteVentas.map((v) => v.venta_id);
+
+        if (ventaIds.length === 0) {
+          setVentas([]);
+          setLoading(false);
+          return;
+        }
+
+        query = supabase
+          .from("ventas")
+          .select(
+            `
           *,
-          marcas (
-            id,
-            nombre
-          ),
-          usuarios (
-          id,
-          correo)
+          marcas (id, nombre),
+          usuarios (id, correo)
         `
-        )
-        .eq("usuario", usuarioActual?.id_auth)
-        .order("fecha", { ascending: false });
+          )
+          .in("id", ventaIds)
+          .order("fecha", { ascending: false });
+      } else {
+        // USUARIO NORMAL: buscar por columna usuario
+        query = supabase
+          .from("ventas")
+          .select(
+            `
+          *,
+          marcas (id, nombre),
+          usuarios (id, correo)
+        `
+          )
+          .eq("usuario", usuarioActual.id_auth)
+          .order("fecha", { ascending: false });
+      }
 
       if (marcaId) {
         query = query.eq("marca_id", marcaId);
@@ -42,9 +70,7 @@ export const useVentas = (marcaId = null) => {
 
       const { data, error } = await query;
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setVentas(data || []);
     } catch (err) {
@@ -60,38 +86,62 @@ export const useVentas = (marcaId = null) => {
       setLoading(true);
       setError(null);
 
-      let query = supabase
-        .from("ventas")
-        .select(
-          `
-          *,
-          marcas (
-            id,
-            nombre
-          ),
-            usuarios (
-          id,
-          correo)
-        `
-        )
-        .eq("usuario", usuarioActual?.id_auth)
+      let query;
 
-        .order("fecha", { ascending: false });
+      if (usuarioActual.roles?.id === 5) {
+        // AYUDANTE
+        const { data: ayudanteVentas, error: ayudanteError } = await supabase
+          .from("ayudantes_venta")
+          .select("venta_id")
+          .eq("usuario_id", usuarioActual.id_auth);
+
+        if (ayudanteError) throw ayudanteError;
+
+        const ventaIds = ayudanteVentas.map((v) => v.venta_id);
+
+        if (ventaIds.length === 0) {
+          setVentas([]);
+          setLoading(false);
+          return;
+        }
+
+        query = supabase
+          .from("ventas")
+          .select(
+            `
+          *,
+          marcas (id, nombre),
+          usuarios (id, correo)
+        `
+          )
+          .in("id", ventaIds)
+          .order("fecha", { ascending: false });
+      } else {
+        // USUARIO
+        query = supabase
+          .from("ventas")
+          .select(
+            `
+          *,
+          marcas (id, nombre),
+          usuarios (id, correo)
+        `
+          )
+          .eq("usuario", usuarioActual.id_auth)
+          .order("fecha", { ascending: false });
+      }
 
       if (marcaId) {
         query = query.eq("marca_id", marcaId);
       }
 
-      // Buscar por código o ID
       if (searchTerm) {
         query = query.or(`codigo.ilike.%${searchTerm}%,id.eq.${searchTerm}`);
       }
 
       const { data, error } = await query;
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setVentas(data || []);
     } catch (err) {
@@ -107,25 +157,54 @@ export const useVentas = (marcaId = null) => {
       setLoading(true);
       setError(null);
 
-      let query = supabase
-        .from("ventas")
-        .select(
-          `
+      let query;
+
+      if (usuarioActual.roles?.id === 5) {
+        // Si es AYUDANTE, obtener los IDs de las ventas asignadas
+        const { data: ayudanteVentas, error: ayudanteError } = await supabase
+          .from("ayudantes_venta")
+          .select("venta_id")
+          .eq("usuario_id", usuarioActual.id_auth);
+
+        if (ayudanteError) throw ayudanteError;
+
+        const ventaIds = ayudanteVentas.map((v) => v.venta_id);
+
+        if (ventaIds.length === 0) {
+          setVentas([]);
+          setLoading(false);
+          return;
+        }
+
+        query = supabase
+          .from("ventas")
+          .select(
+            `
           *,
-          marcas (
-            id,
-            nombre
-          ),
-           usuarios (
-              id,
-              correo
-            )
+          marcas (id, nombre),
+          usuarios (id, correo)
         `
-        )
-        .gte("fecha", startDate)
-        .lte("fecha", endDate)
-        .eq("usuario", usuarioActual?.id_auth)
-        .order("fecha", { ascending: false });
+          )
+          .in("id", ventaIds)
+          .gte("fecha", startDate)
+          .lte("fecha", endDate)
+          .order("fecha", { ascending: false });
+      } else {
+        // Si es USUARIO normal
+        query = supabase
+          .from("ventas")
+          .select(
+            `
+          *,
+          marcas (id, nombre),
+          usuarios (id, correo)
+        `
+          )
+          .eq("usuario", usuarioActual.id_auth)
+          .gte("fecha", startDate)
+          .lte("fecha", endDate)
+          .order("fecha", { ascending: false });
+      }
 
       if (marcaId) {
         query = query.eq("marca_id", marcaId);
@@ -133,9 +212,7 @@ export const useVentas = (marcaId = null) => {
 
       const { data, error } = await query;
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setVentas(data || []);
     } catch (err) {

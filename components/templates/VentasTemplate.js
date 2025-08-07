@@ -126,38 +126,8 @@ const VentasTemplate = ({ marcaId = null, navigation, route }) => {
   }, []);
 
   const handleVentaPress = (venta) => {
-    // Si la venta ya está asignada al usuario actual, ir directo al detalle
-    if (venta.usuario === usuarioActual?.id_auth) {
-      navigation.navigate("DetalleVenta", { venta });
-      return;
-    }
-
-    // Si la venta no está asignada, mostrar alerta de confirmación
-    if (!venta.usuario) {
-      Alert.alert(
-        "Asignar Venta",
-        `Se te asignará la venta con código: ${venta.codigo || venta.id}. ¿Estás de acuerdo en comenzar?`,
-        [
-          {
-            text: "Cancelar",
-            style: "cancel",
-          },
-          {
-            text: "Aceptar",
-            onPress: async () => {
-              try {
-                await assignVentaToUser(venta.id, usuarioActual.id_auth);
-                navigation.navigate("DetalleVenta", {
-                  venta: { ...venta, usuario: usuarioActual.id_auth },
-                });
-              } catch (error) {
-                Alert.alert("Error", "No se pudo asignar la venta");
-              }
-            },
-          },
-        ]
-      );
-    }
+    navigation.navigate("DetalleVenta", { venta });
+    return;
   };
 
   const renderItem = ({ item }) => (
