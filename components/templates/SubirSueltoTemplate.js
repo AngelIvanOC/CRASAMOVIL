@@ -1,3 +1,4 @@
+// SubirSueltoTemplate.js
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -11,6 +12,7 @@ import CamaraEscaneo from "../organismos/CamaraEscaneo";
 import { supabase } from "../../supabase/supabase";
 import CustomAlert from "../atomos/Alertas/CustomAlert";
 import ValidacionRackQR from "../organismos/ValidacionRackQR";
+import { useProductos } from "../../hooks/useProductos";
 
 const SubirSueltoTemplate = ({
   producto,
@@ -19,6 +21,7 @@ const SubirSueltoTemplate = ({
   navigation,
   onScanComplete,
 }) => {
+  const { agregarPendiente } = useProductos();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -74,9 +77,6 @@ const SubirSueltoTemplate = ({
 
     const scannedCode = data.trim();
 
-    console.log("[DEBUG] Código escaneado:", scannedCode);
-    console.log("[DEBUG] Código esperado:", sueltoItem.codigo_barras);
-
     // Verificar que el código escaneado coincida con la caja seleccionada
     if (scannedCode !== sueltoItem.codigo_barras) {
       showAlert({
@@ -100,10 +100,10 @@ const SubirSueltoTemplate = ({
       return;
     }
 
-    // Código correcto, mostrar confirmación y proceder a validación de rack
+    // Código correcto, mostrar confirmación para crear pendiente
     showAlert({
       title: "¡Código Validado!",
-      message: `Código de barras confirmado.\n\nAhora escanea el código QR del rack ${rackSugerido.codigo_rack} donde debes colocar esta caja.`,
+      message: `¿Deseas crear un pendiente para mover esta caja al rack ${rackSugerido.codigo_rack}?`,
       buttons: [
         {
           text: "Cancelar",
@@ -114,120 +114,62 @@ const SubirSueltoTemplate = ({
           style: "cancel",
         },
         {
-          text: "Continuar",
-          onPress: () => {
+          text: "Crear Pendiente",
+          onPress: async () => {
             setAlertVisible(false);
-            setEsperandoValidacionRack(true);
+            await crearPendiente();
           },
         },
       ],
     });
   };
 
-  const handleQRRackEscaneado = (codigoQREscaneado) => {
-    // Comparar el código escaneado con el rack sugerido
-    if (codigoQREscaneado === rackSugerido.codigo_rack) {
-      // Código correcto, proceder con el movimiento
-      showAlert({
-        title: "¡Rack Validado!",
-        message: `¿Confirmas mover ${sueltoItem.cantidad} unidades de ${producto.nombre} al rack ${rackSugerido.codigo_rack}?`,
-        buttons: [
-          {
-            text: "Cancelar",
-            style: "cancel",
-            onPress: () => {
-              setAlertVisible(false);
-              setEsperandoValidacionRack(false);
-            },
-          },
-          {
-            text: "Confirmar",
-            onPress: async () => {
-              setAlertVisible(false);
-              setEsperandoValidacionRack(false);
-              await handleMoverARack();
-            },
-          },
-        ],
-      });
-    } else {
-      // Código incorrecto
-      showAlert({
-        title: "Rack Incorrecto",
-        message: `El código escaneado (${codigoQREscaneado}) no coincide con el rack asignado (${rackSugerido.codigo_rack}). Por favor, escanea el código QR del rack correcto.`,
-        buttons: [
-          {
-            text: "Reintentar",
-            onPress: () => {
-              setAlertVisible(false);
-              setResetQRScanner(true);
-              setTimeout(() => setResetQRScanner(false), 100);
-            },
-          },
-          {
-            text: "Cancelar",
-            style: "cancel",
-            onPress: () => {
-              setAlertVisible(false);
-              setEsperandoValidacionRack(false);
-            },
-          },
-        ],
-      });
-    }
-  };
-
-  const handleMoverARack = async () => {
+  const crearPendiente = async () => {
     try {
       setUpdating(true);
 
-      // Usar la función SQL para mover de suelto a rack
-      const { data, error } = await supabase.rpc("mover_suelto_a_rack", {
-        suelto_id: sueltoItem.id,
-        rack_id: rackSugerido.id,
-      });
+      // Primero, crear el pendiente
+      await agregarPendiente(
+        producto.id,
+        sueltoItem.cantidad,
+        sueltoItem.codigo_barras,
+        rackSugerido.codigo_rack,
+        sueltoItem.fecha_caducidad
+      );
 
-      if (error) {
-        console.error("Error al mover a rack:", error);
-        showAlert({
-          title: "Error",
-          message: "No se pudo mover el producto al rack",
-          buttons: [
-            {
-              text: "OK",
-              onPress: () => setAlertVisible(false),
-            },
-          ],
-        });
-        setScanned(false);
-        return;
+      // Luego, eliminar de la tabla suelto
+      const { error: deleteError } = await supabase
+        .from("suelto")
+        .delete()
+        .eq("id", sueltoItem.id);
+
+      if (deleteError) {
+        throw new Error(
+          "No se pudo eliminar de suelto: " + deleteError.message
+        );
       }
 
       showAlert({
-        title: "¡Éxito!",
-        message: `Se movieron ${sueltoItem.cantidad} unidades al rack ${rackSugerido.codigo_rack} correctamente.`,
+        title: "¡Pendiente creado!",
+        message: `Se ha creado un pendiente para mover ${sueltoItem.cantidad} unidades de ${producto.nombre} al rack ${rackSugerido.codigo_rack}.`,
         buttons: [
           {
             text: "OK",
             onPress: () => {
-              setAlertVisible(false);
               onScanComplete?.();
             },
           },
         ],
       });
     } catch (error) {
-      console.error("Error moviendo a rack:", error);
+      console.error("Error en el proceso:", error);
       showAlert({
         title: "Error",
-        message: error.message || "Error desconocido al mover la caja.",
+        message: error.message || "No se pudo completar la operación",
         buttons: [
           {
             text: "OK",
-            onPress: () => {
-              setAlertVisible(false);
-              setScanned(false);
-            },
+            onPress: () => setAlertVisible(false),
           },
         ],
       });
@@ -236,6 +178,7 @@ const SubirSueltoTemplate = ({
     }
   };
 
+  // Resto del código (render) permanece igual...
   if (!permission) {
     return (
       <View style={styles.centerContainer}>
@@ -285,24 +228,12 @@ const SubirSueltoTemplate = ({
         <Text style={styles.rackInfo}>🎯 Rack: {rackSugerido.codigo_rack}</Text>
         <View style={styles.separator} />
         <Text style={styles.instruction}>
-          {!esperandoValidacionRack
-            ? "Escanea el código de barras de la caja seleccionada"
-            : "Escanea el código QR del rack destino"}
+          Escanea el código de barras de la caja seleccionada para crear un
+          pendiente
         </Text>
       </View>
 
-      {/* Validación de rack QR */}
-      {esperandoValidacionRack && (
-        <ValidacionRackQR
-          onQRRackEscaneado={handleQRRackEscaneado}
-          rackEsperado={rackSugerido}
-          onCancel={() => setEsperandoValidacionRack(false)}
-          resetScan={resetQRScanner}
-          tipoUbicacion="rack"
-        />
-      )}
-
-      {/* Cámara - solo mostrar si no estamos validando rack */}
+      {/* Cámara */}
       {!esperandoValidacionRack && (
         <CamaraEscaneo
           onBarCodeScanned={handleBarCodeScanned}
@@ -323,7 +254,7 @@ const SubirSueltoTemplate = ({
       {updating && (
         <View style={styles.updatingOverlay}>
           <ActivityIndicator size="large" color="#023E8A" />
-          <Text style={styles.updatingText}>Moviendo a rack...</Text>
+          <Text style={styles.updatingText}>Creando pendiente...</Text>
         </View>
       )}
 
@@ -338,6 +269,7 @@ const SubirSueltoTemplate = ({
   );
 };
 
+// Los estilos permanecen igual...
 const styles = StyleSheet.create({
   container: {
     flex: 1,
