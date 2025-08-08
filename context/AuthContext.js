@@ -1,4 +1,3 @@
-// context/AuthContext.js
 import { createContext, useState, useEffect } from "react";
 import { supabase } from "../supabase/supabase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -15,7 +14,6 @@ export const AuthProvider = ({ children }) => {
         if (sessionData) {
           const parsedSession = JSON.parse(sessionData);
 
-          // ⬇️ Solo una llamada a setSession
           await supabase.auth.setSession({
             access_token: parsedSession.access_token,
             refresh_token: parsedSession.refresh_token,
@@ -25,7 +23,6 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (error) {
         console.log("Error restaurando sesión:", error);
-        // Si falla, limpiar AsyncStorage
         await AsyncStorage.removeItem("userSession");
         setUser(null);
       }

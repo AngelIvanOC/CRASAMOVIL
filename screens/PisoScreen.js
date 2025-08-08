@@ -14,7 +14,7 @@ const PisoScreen = ({ route, navigation }) => {
   const handleBajarCaja = () => {
     navigation.navigate("BajarPiso", {
       producto,
-      onUpdate: cargarHistorial, // Para refrescar después del escaneo
+      onUpdate: cargarHistorial,
     });
   };
 
@@ -35,7 +35,6 @@ const PisoScreen = ({ route, navigation }) => {
 
   const getSugerenciaRack = async (productoId) => {
     try {
-      // Consultar tanto cajas como suelto
       const [cajasResult, sueltoResult] = await Promise.all([
         supabase
           .from("cajas")
@@ -66,13 +65,11 @@ const PisoScreen = ({ route, navigation }) => {
       const cajas = cajasResult.data || [];
       const suelto = sueltoResult.data || [];
 
-      // Combinar ambos arrays y marcar el origen
       const todoInventario = [
         ...cajas.map((item) => ({ ...item, origen: "rack" })),
         ...suelto.map((item) => ({ ...item, origen: "suelto" })),
       ];
 
-      // Ordenar por fecha de caducidad (más próximo a vencer primero)
       todoInventario.sort(
         (a, b) => new Date(a.fecha_caducidad) - new Date(b.fecha_caducidad)
       );

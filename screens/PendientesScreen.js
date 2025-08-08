@@ -1,4 +1,3 @@
-// PendientesScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -10,7 +9,7 @@ import {
 } from "react-native";
 import { useProductos } from "../hooks/useProductos";
 import { useNavigation } from "@react-navigation/native";
-import CardPendiente from "../components/atomos/CardPendiente"; // Importa la nueva card
+import CardPendiente from "../components/atomos/CardPendiente";
 import { MaterialIcons } from "@expo/vector-icons";
 
 const PendientesScreen = () => {

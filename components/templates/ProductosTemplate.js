@@ -28,7 +28,6 @@ const ProductosTemplate = ({ route, navigation }) => {
     buttons: [],
   });
 
-  // ✅ Función para manejar agregar producto
   const handleAgregarProducto = () => {
     navigation.navigate("AgregarProducto", { marca });
   };
@@ -36,38 +35,6 @@ const ProductosTemplate = ({ route, navigation }) => {
   const handleEntradaPress = () => {
     const marcaNombre = marca.nombre?.toLowerCase();
     if (marcaNombre === "la costeña") {
-      /*showAlert({
-        title:
-          "¿Tu etiqueta tiene caducidad y el numero del código de barras visible en la etiqueta?",
-        message: "",
-        buttons: [
-          {
-            text: "No",
-            onPress: () => {
-              setAlertVisible(false);
-              navigation.navigate("EscanearEntrada", {
-                marca: marca,
-                onUpdate: () => {
-                  fetchProductos(marca.id);
-                },
-              });
-            },
-          },
-          {
-            text: "Sí",
-            onPress: () => {
-              setAlertVisible(false);
-              navigation.navigate("EscanearCostena", {
-                marca: marca,
-                onUpdate: () => {
-                  fetchProductos(marca.id);
-                },
-              });
-            },
-          },
-        ],
-      });*/
-      // Comportamiento normal para otras marcas
       navigation.navigate("EscanearEntrada", {
         marca: marca,
         onUpdate: () => {
@@ -125,7 +92,6 @@ const ProductosTemplate = ({ route, navigation }) => {
         },
       });
     } else {
-      // Comportamiento normal para otras marcas
       navigation.navigate("EscanearEntrada", {
         marca: marca,
         onUpdate: () => {
@@ -187,7 +153,6 @@ const ProductosTemplate = ({ route, navigation }) => {
     setAlertProps({ title, message, buttons });
     setAlertVisible(true);
 
-    // Si no tiene botones, cerrar automáticamente después de 4 segundos
     if (buttons.length === 0) {
       setTimeout(() => {
         setAlertVisible(false);
@@ -306,8 +271,6 @@ const ProductosTemplate = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  // ... (mismos estilos anteriores de ProductosTemplate)
-  // solo quita estilos que moviste a los componentes separados
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",

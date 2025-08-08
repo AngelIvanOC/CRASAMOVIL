@@ -35,7 +35,6 @@ const BajarPisoTemplate = ({ producto, navigation, onScanComplete }) => {
     setAlertProps({ title, message, buttons });
     setAlertVisible(true);
 
-    // Si no tiene botones, cerrar automáticamente después de 4 segundos
     if (buttons.length === 0) {
       setTimeout(() => {
         setAlertVisible(false);
@@ -65,7 +64,6 @@ const BajarPisoTemplate = ({ producto, navigation, onScanComplete }) => {
     console.log("[DEBUG] Producto:", producto.nombre);
 
     try {
-      // Buscar primero en cajas
       const { data: cajaData, error: cajaError } = await supabase
         .from("cajas")
         .select(
@@ -87,7 +85,6 @@ const BajarPisoTemplate = ({ producto, navigation, onScanComplete }) => {
         .eq("codigo_barras", scannedCode)
         .single();
 
-      // Si no se encuentra en cajas, buscar en suelto
       if (cajaError && cajaError.code === "PGRST116") {
         const { data: sueltoData, error: sueltoError } = await supabase
           .from("suelto")
@@ -134,7 +131,6 @@ const BajarPisoTemplate = ({ producto, navigation, onScanComplete }) => {
           return;
         }
 
-        // Verificar que pertenece al producto correcto (suelto)
         if (sueltoData.producto_id !== producto.id) {
           showAlert({
             title: "Producto incorrecto",
@@ -157,7 +153,6 @@ const BajarPisoTemplate = ({ producto, navigation, onScanComplete }) => {
           return;
         }
 
-        // Confirmar antes de mover (desde suelto)
         showAlert({
           title: "Confirmar movimiento",
           message: `¿Mover ${sueltoData.cantidad} unidades de ${sueltoData.productos.nombre} de suelto al piso?`,
@@ -205,7 +200,6 @@ const BajarPisoTemplate = ({ producto, navigation, onScanComplete }) => {
         return;
       }
 
-      // Verificar que pertenece al producto correcto (cajas)
       if (cajaData.producto_id !== producto.id) {
         showAlert({
           title: "Producto incorrecto",
@@ -228,7 +222,6 @@ const BajarPisoTemplate = ({ producto, navigation, onScanComplete }) => {
         return;
       }
 
-      // Confirmar antes de mover (desde rack)
       showAlert({
         title: "Confirmar movimiento",
         message: `¿Mover ${cajaData.cantidad} unidades de ${
@@ -279,7 +272,6 @@ const BajarPisoTemplate = ({ producto, navigation, onScanComplete }) => {
     try {
       setUpdating(true);
 
-      // Usar la función SQL para mover de suelto a piso
       const { data, error } = await supabase.rpc("mover_suelto_a_piso", {
         suelto_id: sueltoId,
       });
@@ -337,7 +329,6 @@ const BajarPisoTemplate = ({ producto, navigation, onScanComplete }) => {
     try {
       setUpdating(true);
 
-      // Usar la función SQL para mover la caja
       const { data, error } = await supabase.rpc("mover_caja_a_piso", {
         caja_id: cajaId,
       });
@@ -422,7 +413,6 @@ const BajarPisoTemplate = ({ producto, navigation, onScanComplete }) => {
 
   return (
     <View style={styles.container}>
-      {/* Info del producto */}
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{producto.nombre}</Text>
         <Text style={styles.productCode}>Código: {producto.codigo}</Text>
@@ -431,7 +421,6 @@ const BajarPisoTemplate = ({ producto, navigation, onScanComplete }) => {
         </Text>
       </View>
 
-      {/* Cámara */}
       <CamaraEscaneo
         onBarCodeScanned={handleBarCodeScanned}
         scanning={scanning}

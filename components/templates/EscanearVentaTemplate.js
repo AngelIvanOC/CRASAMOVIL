@@ -48,7 +48,6 @@ const EscanearVentaTemplate = ({
     setAlertProps({ title, message, buttons });
     setAlertVisible(true);
 
-    // Si no tiene botones, cerrar automáticamente después de 4 segundos
     if (buttons.length === 0) {
       setTimeout(() => {
         setAlertVisible(false);
@@ -57,24 +56,18 @@ const EscanearVentaTemplate = ({
   };
 
   const extractProductCode = (barcode) => {
-    // Función para extraer el código del producto desde el código de barras
     const cleanBarcode = barcode.trim();
 
-    // Si el código de barras tiene al menos 7 dígitos
     if (cleanBarcode.length >= 7) {
-      // Tomar los primeros 7 dígitos (incluyendo los 0s del inicio)
       const first7Digits = cleanBarcode.substring(0, 7);
 
-      // Después remover los 0s del inicio
       const withoutLeadingZeros = first7Digits.replace(/^0+/, "");
 
-      // Si después de quitar los 0s queda algo, devolverlo
       if (withoutLeadingZeros.length > 0) {
         return withoutLeadingZeros;
       }
     }
 
-    // Si no cumple con el formato esperado, devolver el código original
     return cleanBarcode;
   };
 
@@ -94,7 +87,6 @@ const EscanearVentaTemplate = ({
       alreadyHandledRef.current = false;
     }, 4000);
 
-    // 1. Obtener información del producto
     const productCode = detalle.productos?.codigo;
     const scannedCode = data.trim();
 
@@ -108,7 +100,7 @@ const EscanearVentaTemplate = ({
       console.log("[DEBUG] Buscando código de barras en cajas...");
 
       const { data: pisoData, error } = await supabase
-        .from("piso") // ✅ Cambiar de "cajas" a "piso"
+        .from("piso")
         .select(
           `
     producto_id,
@@ -217,7 +209,6 @@ const EscanearVentaTemplate = ({
 
       const cantidadPendiente = detalle.cantidad - (detalle.escaneado || 0);
 
-      // Procesar salida solo por la cantidad pendiente
       const resultado = await procesarSalidaCompleta(
         detalle.productos.id,
         cantidadPendiente,
@@ -242,7 +233,6 @@ const EscanearVentaTemplate = ({
 
       setCantidadRestante(restante);
 
-      // 2. REEMPLAZAR el bloque de alerts:
       if (restante <= 0) {
         await updateEstadoDetalle(detalle.id, "completado");
         showAlert({
@@ -259,7 +249,6 @@ const EscanearVentaTemplate = ({
           ],
         });
       } else {
-        // ✅ ACTUALIZAR estado a "pendiente" si hay progreso parcial
         if (escaneadoFinal > 0) {
           await updateEstadoDetalle(detalle.id, "pendiente");
         }
@@ -346,10 +335,6 @@ const EscanearVentaTemplate = ({
 
   return (
     <View style={styles.container}>
-      {/* Información del producto 
-      <CardProductoEscaneo detalle={detalle} />*/}
-
-      {/* Cámara de escaneo */}
       <CamaraEscaneo
         onBarCodeScanned={handleBarCodeScanned}
         scanning={scanning}
@@ -373,57 +358,6 @@ const EscanearVentaTemplate = ({
         onClose={() => setAlertVisible(false)}
       />
 
-      {/* Controles 
-      <View style={styles.controlsContainer}>
-        {!scanning && !scanned && (
-          <TouchableOpacity
-            style={styles.scanButton}
-            onPress={() => {
-              setScanning(true);
-              setScanned(false);
-            }}
-            disabled={updating}
-          >
-            <Text style={styles.scanButtonText}>
-              {updating ? "Procesando..." : "Iniciar Escaneo"}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {scanning && (
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => {
-              setScanning(false);
-              setScanned(false);
-            }}
-          >
-            <Text style={styles.cancelButtonText}>Cancelar Escaneo</Text>
-          </TouchableOpacity>
-        )}
-
-        {scanned && (
-          <TouchableOpacity
-            style={styles.rescanButton}
-            onPress={() => {
-              setScanned(false);
-              setScanning(true);
-            }}
-            disabled={updating}
-          >
-            <Text style={styles.rescanButtonText}>Escanear Nuevamente</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={styles.manualButton}
-          onPress={handleManualComplete}
-          disabled={updating || scanning}
-        >
-          <Text style={styles.manualButtonText}>Completar Manualmente</Text>
-        </TouchableOpacity>
-      </View>
-*/}
       {updating && (
         <View style={styles.updatingOverlay}>
           <ActivityIndicator size="large" color="#023E8A" />

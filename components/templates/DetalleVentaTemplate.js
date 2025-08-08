@@ -64,15 +64,13 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
     try {
       console.log("Intentando surtir detalle:", detalle.id);
 
-      // Usar la función existente que ya maneja todo
       const resultado = await procesarSalidaCompleta(
         detalle.productos.id,
         detalle.cantidad,
-        null, // sin código de barras
-        detalle.id // pasar el detalleId para actualizar escaneado
+        null,
+        detalle.id
       );
 
-      // Determinar el estado basado en lo que se logró surtir
       const cantidadTotal = detalle.cantidad;
       const escaneadoActual =
         (detalle.escaneado || 0) + resultado.cantidadRestada;
@@ -86,7 +84,6 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
         nuevoEstado = "incompleto";
       }
 
-      // Actualizar con el estado correcto
       await updateEstadoDetalle(detalle.id, nuevoEstado);
       await updateDetalle(detalle.id, { estado: nuevoEstado });
 
@@ -138,10 +135,8 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
       mensajePiso = `\n\n⚠️ No hay cajas en piso, baja de rack para continuar`;
     }
 
-    // Crear el array de botones de forma condicional
     const buttons = [{ text: "Cerrar", style: "cancel" }];
 
-    // Solo agregar el botón si no hay cajas en piso
     if (!sugerencia) {
       buttons.push({
         text: "Ir a piso",
@@ -154,7 +149,6 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
         },
       });
     } else {
-      // Mantener el botón original de Escanear cuando sí hay cajas en piso
       buttons.push({
         text: "Surtir",
         onPress: () => {
@@ -170,7 +164,7 @@ const DetalleVentaTemplate = ({ ventaId, navigation, route }) => {
       }${
         detalle.ubicacion ? `\nUbicación: ${detalle.ubicacion}` : ""
       }${mensajePiso}`,
-      buttons // Usar el array dinámico
+      buttons
     );
   };
 

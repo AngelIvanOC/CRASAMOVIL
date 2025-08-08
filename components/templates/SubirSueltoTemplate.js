@@ -1,4 +1,3 @@
-// SubirSueltoTemplate.js
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -77,7 +76,6 @@ const SubirSueltoTemplate = ({
 
     const scannedCode = data.trim();
 
-    // Verificar que el código escaneado coincida con la caja seleccionada
     if (scannedCode !== sueltoItem.codigo_barras) {
       showAlert({
         title: "Código incorrecto",
@@ -100,7 +98,6 @@ const SubirSueltoTemplate = ({
       return;
     }
 
-    // Código correcto, mostrar confirmación para crear pendiente
     showAlert({
       title: "¡Código Validado!",
       message: `¿Deseas crear un pendiente para mover esta caja al rack ${rackSugerido.codigo_rack}?`,
@@ -128,7 +125,6 @@ const SubirSueltoTemplate = ({
     try {
       setUpdating(true);
 
-      // Primero, crear el pendiente
       await agregarPendiente(
         producto.id,
         sueltoItem.cantidad,
@@ -137,7 +133,6 @@ const SubirSueltoTemplate = ({
         sueltoItem.fecha_caducidad
       );
 
-      // Luego, eliminar de la tabla suelto
       const { error: deleteError } = await supabase
         .from("suelto")
         .delete()
@@ -178,7 +173,6 @@ const SubirSueltoTemplate = ({
     }
   };
 
-  // Resto del código (render) permanece igual...
   if (!permission) {
     return (
       <View style={styles.centerContainer}>
@@ -210,7 +204,6 @@ const SubirSueltoTemplate = ({
 
   return (
     <View style={styles.container}>
-      {/* Info del producto y caja seleccionada */}
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{producto.nombre}</Text>
         <Text style={styles.productCode}>Código: {producto.codigo}</Text>
@@ -233,7 +226,6 @@ const SubirSueltoTemplate = ({
         </Text>
       </View>
 
-      {/* Cámara */}
       {!esperandoValidacionRack && (
         <CamaraEscaneo
           onBarCodeScanned={handleBarCodeScanned}
@@ -269,7 +261,6 @@ const SubirSueltoTemplate = ({
   );
 };
 
-// Los estilos permanecen igual...
 const styles = StyleSheet.create({
   container: {
     flex: 1,

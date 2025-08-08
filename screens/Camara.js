@@ -25,7 +25,6 @@ export default function Camara() {
     setLoading(true);
     setDebugInfo("📸 Tomando foto...");
 
-    // Limpiar estados previos
     setTextOCR("");
     setParsedProduct(null);
 
@@ -41,7 +40,6 @@ export default function Camara() {
       const compressedImage = await compressImageForOCR(photo.uri);
       setDebugInfo("✅ Imagen comprimida, procesando OCR...");
 
-      // Agregar timeout para evitar que se quede colgado
       await Promise.race([
         processOCRWithOCRSpace(compressedImage),
         new Promise((_, reject) =>
@@ -67,14 +65,12 @@ export default function Camara() {
 
       setDebugInfo(`📊 Tamaño original: ${fileSizeKB.toFixed(0)} KB`);
 
-      // Configuración más agresiva de compresión desde el inicio
       let manipulationOptions = {
         compress: 0.6,
         format: ImageManipulator.SaveFormat.JPEG,
-        resize: { width: 1000 }, // Reducir tamaño por defecto
+        resize: { width: 1000 },
       };
 
-      // Si es muy grande, comprimir aún más
       if (fileSizeKB > 500) {
         manipulationOptions = {
           compress: 0.4,
@@ -96,7 +92,6 @@ export default function Camara() {
 
       setDebugInfo(`📊 Tamaño comprimido: ${compressedSizeKB.toFixed(0)} KB`);
 
-      // Si aún es muy grande, comprimir más
       if (compressedSizeKB > 500) {
         const superCompressed = await ImageManipulator.manipulateAsync(
           manipulatedImage.uri,
@@ -119,7 +114,7 @@ export default function Camara() {
     } catch (error) {
       console.error("Error al comprimir imagen:", error);
       setDebugInfo(`❌ Error compresión: ${error.message}`);
-      throw error; // Re-lanzar el error para que sea manejado arriba
+      throw error;
     }
   };
 
@@ -142,7 +137,6 @@ export default function Camara() {
       const cleanText = text.replace(/\s+/g, " ").trim();
       console.log("Texto limpio para parsear:", cleanText);
 
-      // Buscar FECHA (formato actualizado)
       const fechaRegex = /FECHA:\s*(\d{1,2}\.\d{1,2}\.\d{4})/i;
       const fechaMatch = cleanText.match(fechaRegex);
       if (fechaMatch) {
@@ -150,7 +144,6 @@ export default function Camara() {
         console.log("Fecha encontrada:", product.fecha);
       }
 
-      // Buscar EXPIRA (formato actualizado)
       const expiraRegex = /EXPIRA:\s*(\d{1,2}\.\d{1,2}\.\d{4})/i;
       const expiraMatch = cleanText.match(expiraRegex);
       if (expiraMatch) {
@@ -158,7 +151,6 @@ export default function Camara() {
         console.log("Expiración encontrada:", product.expiracion);
       }
 
-      // Buscar HORA
       const horaRegex = /HORA:\s*(\d{1,2}:\d{2}:\d{2})/i;
       const horaMatch = cleanText.match(horaRegex);
       if (horaMatch) {
@@ -166,7 +158,6 @@ export default function Camara() {
         console.log("Hora encontrada:", product.hora);
       }
 
-      // Buscar codigo de producto
       const condidoProductoRegex = /\b(\d{5,7})\b/;
       const codigoProductoMatch = cleanText.match(condidoProductoRegex);
       if (codigoProductoMatch) {
@@ -174,7 +165,6 @@ export default function Camara() {
         console.log("Codigo producto:", product.codigo);
       }
 
-      //Buscador cantidad por caja
       const cantidadRegex = /\b(\d{1,6})\s*CA\b/;
       const cantidadMatch = cleanText.match(cantidadRegex);
       if (cantidadMatch) {
@@ -182,7 +172,6 @@ export default function Camara() {
         console.log("Cantidad: ", product.cantidad);
       }
 
-      // Buscar código de barras (patrón más flexible)
       const codigoRegex = /\b(500\d{9})\b/;
       const codigoMatch = cleanText.match(codigoRegex);
       if (codigoMatch) {
@@ -190,7 +179,6 @@ export default function Camara() {
         console.log("Código de barras encontrado:", product.codigoBarras);
       }
 
-      // Buscar descripción
       const descripcionPatterns = [
         /DESCRIPCION\s*(.+?)(?=\d{6,}|$)/i,
         /DESORIPCION\s*(.+?)(?=\d{6,}|$)/i,
@@ -209,7 +197,6 @@ export default function Camara() {
         }
       }
 
-      // Buscar lote
       const loteRegex = /(?:LOTE|CONS):\s*([A-Z0-9]+)/i;
       const loteMatch = cleanText.match(loteRegex);
       if (loteMatch) {
@@ -217,7 +204,6 @@ export default function Camara() {
         console.log("Lote encontrado:", product.lote);
       }
 
-      // Buscar planta
       const plantaRegex = /PLANTA\/ALMACEN\s*([A-Z\/]+)/i;
       const plantaMatch = cleanText.match(plantaRegex);
       if (plantaMatch) {
@@ -225,7 +211,6 @@ export default function Camara() {
         console.log("Planta encontrada:", product.planta);
       }
 
-      // Buscar orden
       const ordenRegex = /ORDEN\s*(\d+)/i;
       const ordenMatch = cleanText.match(ordenRegex);
       if (ordenMatch) {
@@ -233,7 +218,6 @@ export default function Camara() {
         console.log("Orden encontrada:", product.orden);
       }
 
-      // Verificar si se encontraron datos mínimos
       const hasMinimumData =
         product.fecha ||
         product.expiracion ||
@@ -371,7 +355,7 @@ Cantidad: ${product.cantidad || "N/A"}
       console.error("Error en OCR.space:", error);
       setDebugInfo(`❌ Error OCR: ${error.message}`);
       setTextOCR(`Error al procesar OCR: ${error.message}`);
-      throw error; // Re-lanzar para que sea manejado por el timeout
+      throw error;
     }
   };
 

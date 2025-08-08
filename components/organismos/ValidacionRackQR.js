@@ -1,4 +1,3 @@
-// components/organismos/ValidacionRackQR.js
 import React, { useState, useRef, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { CameraView } from "expo-camera";
@@ -16,7 +15,6 @@ const ValidacionRackQR = ({
   const cameraRef = useRef(null);
   const alreadyHandledRef = useRef(false);
 
-  // Efecto para resetear el estado cuando el padre lo indique
   useEffect(() => {
     if (resetScan) {
       console.log("Reseteando estado del scanner QR");
@@ -27,7 +25,6 @@ const ValidacionRackQR = ({
   }, [resetScan]);
 
   const handleBarCodeScanned = ({ type, data }) => {
-    // Verificar si ya se está procesando un escaneo
     if (scanned || processing || alreadyHandledRef.current) {
       console.log("QR ignorado - ya procesando");
       return;
@@ -35,24 +32,20 @@ const ValidacionRackQR = ({
 
     console.log("Procesando QR escaneado:", data);
 
-    // Marcar como procesando
     alreadyHandledRef.current = true;
     setScanned(true);
     setProcessing(true);
 
-    // Procesar el código QR
     onQRRackEscaneado(data);
   };
 
   const handleRetry = () => {
-    // Solo permitir retry si el componente padre lo permite
     setScanned(false);
     setProcessing(false);
     alreadyHandledRef.current = false;
   };
 
   const handleCancel = () => {
-    // Limpiar estados antes de cancelar
     setScanned(false);
     setProcessing(false);
     alreadyHandledRef.current = false;
@@ -76,7 +69,6 @@ const ValidacionRackQR = ({
   return (
     <View style={styles.overlay}>
       <View style={styles.container}>
-        {/* Solo mostrar cámara si no se ha escaneado exitosamente */}
         {!scanned && (
           <CameraView
             style={styles.camera}
@@ -88,7 +80,6 @@ const ValidacionRackQR = ({
           />
         )}
 
-        {/* Mostrar pantalla de procesando cuando se escaneó */}
         {scanned && (
           <View style={styles.processingContainer}>
             <Text style={styles.processingText}>Validando código QR...</Text>
@@ -104,7 +95,6 @@ const ValidacionRackQR = ({
               <Text style={styles.rackCode}> {getRackCode()}</Text>
             </View>
 
-            {/* Marco de escaneo QR */}
             <View style={styles.scanFrame}>
               <View style={[styles.corner, styles.topLeft]} />
               <View style={[styles.corner, styles.topRight]} />

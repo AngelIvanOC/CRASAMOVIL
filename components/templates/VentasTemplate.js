@@ -29,7 +29,7 @@ const VentasTemplate = ({ marcaId = null, navigation, route }) => {
   const [currentFilter, setCurrentFilter] = useState("todos");
   const searchTimeoutRef = useRef(null);
   const { usuarioActual } = useUsuarios();
-  const { assignVentaToUser } = useVentas(marcaId); // ← Agregar esta función
+  const { assignVentaToUser } = useVentas(marcaId); 
 
   const performSearch = useCallback(
     async (term) => {
@@ -37,7 +37,6 @@ const VentasTemplate = ({ marcaId = null, navigation, route }) => {
         if (currentFilter === "todos") {
           await fetchVentas(marcaId);
         } else {
-          // Mantener el filtro de fecha actual
           const range = getCurrentDateRange();
           if (range) {
             await getVentasByDateRange(range.start, range.end, marcaId);

@@ -1,4 +1,3 @@
-// CamaraCostena.js - Versión con compresión mejorada para Android
 import React, { useState, useRef } from "react";
 import {
   View,
@@ -27,11 +26,10 @@ const CamaraCostena = ({ onProductoDetectado }) => {
     setDebugInfo("📸 Tomando foto...");
 
     try {
-      // 🔹 CONFIGURACIÓN OPTIMIZADA POR PLATAFORMA
       const photoConfig = {
-        quality: Platform.OS === "android" ? 0.4 : 0.7, // Menor calidad inicial en Android
+        quality: Platform.OS === "android" ? 0.4 : 0.7,
         base64: false,
-        skipProcessing: false, // Asegura procesamiento consistente
+        skipProcessing: false,
       };
 
       const photo = await cameraRef.current.takePictureAsync(photoConfig);
@@ -52,10 +50,8 @@ const CamaraCostena = ({ onProductoDetectado }) => {
     }
   };
 
-  // 🔹 NUEVA FUNCIÓN: Optimización inteligente por plataforma
   const optimizeImageForOCR = async (imageUri) => {
     try {
-      // Verificar tamaño inicial
       const initialFileInfo = await FileSystem.getInfoAsync(imageUri);
       const initialSizeKB = initialFileInfo.size / 1024;
 
@@ -63,13 +59,12 @@ const CamaraCostena = ({ onProductoDetectado }) => {
         `📊 Tamaño inicial: ${initialSizeKB.toFixed(2)} KB - Plataforma: ${Platform.OS}`
       );
 
-      // 🔹 CONFIGURACIÓN ESPECÍFICA POR PLATAFORMA
       const platformConfig = {
         android: {
-          targetSizeKB: 600, // Más conservador para Android
+          targetSizeKB: 600,
           maxSizeKB: 700,
-          initialResize: 1100, // Resolución inicial más baja
-          compression: 0.5, // Compresión más agresiva
+          initialResize: 1100,
+          compression: 0.5,
         },
         ios: {
           targetSizeKB: 600,
@@ -81,13 +76,11 @@ const CamaraCostena = ({ onProductoDetectado }) => {
 
       const config = platformConfig[Platform.OS] || platformConfig.android;
 
-      // Si ya está en el tamaño objetivo, usar directamente
       if (initialSizeKB <= config.targetSizeKB) {
         console.log("✅ Imagen ya tiene el tamaño adecuado");
         return imageUri;
       }
 
-      // 🔹 PASO 1: Redimensionado y compresión inicial agresiva
       let result = await ImageManipulator.manipulateAsync(
         imageUri,
         [{ resize: { width: config.initialResize } }],
@@ -103,15 +96,12 @@ const CamaraCostena = ({ onProductoDetectado }) => {
         `📉 Después de primera optimización: ${fileSizeKB.toFixed(2)} KB`
       );
 
-      // 🔹 PASO 2: Compresión adicional si es necesario
       if (fileSizeKB > config.maxSizeKB) {
         result = await ImageManipulator.manipulateAsync(
           result.uri,
-          [
-            { resize: { width: 700 } }, // Resolución mínima pero funcional para OCR
-          ],
+          [{ resize: { width: 700 } }],
           {
-            compress: 0.2, // Compresión máxima
+            compress: 0.2,
             format: ImageManipulator.SaveFormat.JPEG,
           }
         );
@@ -123,13 +113,10 @@ const CamaraCostena = ({ onProductoDetectado }) => {
         );
       }
 
-      // 🔹 PASO 3: Verificación final - Solo si es absolutamente necesario
       if (fileSizeKB > config.maxSizeKB + 100) {
         result = await ImageManipulator.manipulateAsync(
           result.uri,
-          [
-            { resize: { width: 600 } }, // Último recurso
-          ],
+          [{ resize: { width: 600 } }],
           {
             compress: 0.1,
             format: ImageManipulator.SaveFormat.JPEG,
@@ -149,15 +136,12 @@ const CamaraCostena = ({ onProductoDetectado }) => {
     }
   };
 
-  // ✅ TODAS LAS FUNCIONES DE PARSING SE MANTIENEN INTACTAS
   const parseCosteñaProduct = (text) => {
     const cleanText = text.replace(/\s+/g, " ").trim();
 
-    // Detectar si es producto Costeña
     if (cleanText.includes("JUMEX")) {
       return parseCosteñaProducts(cleanText);
     } else {
-      // Asumir que es Jumex u otra marca
       return parseJumexProduct(cleanText);
     }
   };
@@ -173,7 +157,6 @@ const CamaraCostena = ({ onProductoDetectado }) => {
 
     const cleanText = text.replace(/\s+/g, " ").trim();
 
-    // Extraer fecha de caducidad (formato d.m.yyyy)
     const expiraRegex = /EXPIRA:\s*(\d{1,2})\.(\d{1,2})\.(\d{4})/i;
     const expiraMatch = cleanText.match(expiraRegex);
     if (expiraMatch) {
@@ -183,17 +166,14 @@ const CamaraCostena = ({ onProductoDetectado }) => {
       product.fechaCaducidad = new Date(year, month, day);
     }
 
-    // Extraer código de producto
     const codigoProductoRegex = /\b(\d{5,7})\b/;
     const codigoProductoMatch = cleanText.match(codigoProductoRegex);
     if (codigoProductoMatch) product.codigo = codigoProductoMatch[1];
 
-    // Extraer código de barras
     const codigoRegex = /\b(\d{10,12})\b/;
     const codigoMatch = cleanText.match(codigoRegex);
     if (codigoMatch) product.codigoBarras = codigoMatch[1];
 
-    // Extraer descripción
     const descripcionPatterns = [
       /DESCRIPCION\s*(.+?)(?=\d{6,}|$)/i,
       /DESORIPCION\s*(.+?)(?=\d{6,}|$)/i,
@@ -211,7 +191,6 @@ const CamaraCostena = ({ onProductoDetectado }) => {
       }
     }
 
-    // Extraer cantidad
     const cantidadRegex = /\b(\d{1,6})\s*CA\b/;
     const cantidadMatch = cleanText.match(cantidadRegex);
     if (cantidadMatch) {
@@ -235,7 +214,6 @@ const CamaraCostena = ({ onProductoDetectado }) => {
 
     const cleanText = text.replace(/\s+/g, " ").trim();
 
-    // Extraer primera fecha encontrada
     const allDatesRegex = /(\d{2})\/(\d{2})\/(\d{4})/g;
     const allDatesMatch = [...cleanText.matchAll(allDatesRegex)];
 
@@ -244,7 +222,6 @@ const CamaraCostena = ({ onProductoDetectado }) => {
       product.fecha = new Date(year, month - 1, day);
     }
 
-    // Extraer fecha de caducidad Jumex
     const fechaCaducidadRegex =
       /FECHA CADUCIDAD:\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i;
     const fechaCaducidadMatch = cleanText.match(fechaCaducidadRegex);
@@ -256,7 +233,6 @@ const CamaraCostena = ({ onProductoDetectado }) => {
       product.fechaCaducidad = new Date(year, month, day);
     }
 
-    // Extraer código de producto Jumex
     const codigoAfterKeywordRegex = /\s+[A-Z\s]*?(\d{6})/i;
     const codigoAfterKeywordMatch = cleanText.match(codigoAfterKeywordRegex);
 
@@ -269,7 +245,6 @@ const CamaraCostena = ({ onProductoDetectado }) => {
         product.codigo = String(parseInt(codigoFallbackMatch[1], 10));
     }
 
-    // Extraer descripción Jumex
     const descripcionJumexPatterns = [
       /(PURE DE TOMATE)/i,
       /(FRIJOLES BAY REF)/i,
@@ -286,7 +261,6 @@ const CamaraCostena = ({ onProductoDetectado }) => {
       }
     }
 
-    // Extraer cantidad Jumex
     const cantidadJumexContextRegex = /cantidad\D*(\d{2,6})\D*(\d{2,6})/i;
     const cantidadJumexMatch = cleanText.match(cantidadJumexContextRegex);
 
@@ -294,24 +268,10 @@ const CamaraCostena = ({ onProductoDetectado }) => {
       product.cantidad = parseInt(cantidadJumexMatch[2], 10);
     }
 
-    // Extraer código de barras (para más de 15 dígitos)
     const codigoBarrasRegex = /\b(\d{15,})\b/;
     const codigoBarrasMatch = cleanText.match(codigoBarrasRegex);
     if (codigoBarrasMatch) product.codigoBarras = codigoBarrasMatch[1];
 
-    // Formatear código de barras
-    /*if (product.codigo && product.cantidad && product.fecha) {
-      const codigo7 = product.codigo.toString().padStart(7, "0");
-      const cantidad5 = product.cantidad.toString().padStart(5, "0");
-
-      const year = product.fecha.getFullYear().toString().slice(-2);
-      const month = String(product.fecha.getMonth() + 1).padStart(2, "0");
-      const day = String(product.fecha.getDate()).padStart(2, "0");
-
-      const fechaFormateada = `${year}${month}${day}`;
-
-      product.codigoBarras = `${codigo7}${cantidad5}${fechaFormateada}`;
-    }*/
     return product;
   };
 
@@ -319,13 +279,11 @@ const CamaraCostena = ({ onProductoDetectado }) => {
     try {
       setDebugInfo("🔍 Procesando con OCR.space...");
 
-      // 🔹 VERIFICACIÓN DE TAMAÑO MÁS PERMISIVA
       const fileInfo = await FileSystem.getInfoAsync(imageUri);
       const fileSizeKB = fileInfo.size / 1024;
 
       console.log(`📊 Tamaño final para OCR: ${fileSizeKB.toFixed(2)} KB`);
 
-      // Límite más alto pero con mejor manejo de errores
       if (fileSizeKB > 800) {
         throw new Error(
           `Imagen aún demasiado grande (${fileSizeKB.toFixed(0)}KB). Intenta con mejor iluminación.`
@@ -421,11 +379,6 @@ const CamaraCostena = ({ onProductoDetectado }) => {
         <Text style={styles.instructionsText}>
           Enfoca la etiqueta del producto dentro del marco
         </Text>
-
-        {/* 🔹 INDICADOR DE PLATAFORMA PARA DEBUG 
-        {__DEV__ && (
-          <Text style={styles.platformText}>Plataforma: {Platform.OS}</Text>
-        )}*/}
       </View>
 
       <View style={styles.controls}>

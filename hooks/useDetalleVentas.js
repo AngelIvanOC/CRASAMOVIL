@@ -15,7 +15,6 @@ export const useDetalleVentas = (ventaId) => {
       setLoading(true);
       setError(null);
 
-      // Obtener información de la venta
       const { data: ventaData, error: ventaError } = await supabase
         .from("ventas")
         .select(
@@ -36,7 +35,6 @@ export const useDetalleVentas = (ventaId) => {
 
       setVenta(ventaData);
 
-      // Obtener detalles de la venta con productos y racks
       const { data: detallesData, error: detallesError } = await supabase
         .from("detalle_ventas")
         .select(
@@ -95,38 +93,6 @@ export const useDetalleVentas = (ventaId) => {
       });
 
       setDetalles(filtrados);
-
-      /*const { data, error } = await supabase
-        .from("detalle_ventas")
-        .select(
-          `
-          *,
-          productos (
-            id,
-            codigo,
-            nombre,
-            marca_id,
-            cajas,
-            cantidad,
-            racks (
-              id,
-              codigo_rack
-            )
-          )
-        `
-        )
-        .eq("venta_id", ventaId)
-        .or(
-          `(productos.nombre.ilike.*${searchTerm}*), (productos.codigo.eq.${searchTerm})`
-        )
-
-        .order("id", { ascending: true });
-
-      if (error) {
-        throw error;
-      }
-
-      setDetalles(data || []);*/
     } catch (err) {
       console.error("Error searching detalle ventas:", err);
       setError(err.message);
@@ -164,7 +130,6 @@ export const useDetalleVentas = (ventaId) => {
         throw error;
       }
 
-      // Actualizar el estado local
       setDetalles((prev) =>
         prev.map((detalle) => (detalle.id === detalleId ? data : detalle))
       );
@@ -205,12 +170,10 @@ export const useDetalleVentas = (ventaId) => {
         throw error;
       }
 
-      // Actualizar el estado local
       setDetalles((prev) =>
         prev.map((detalle) => (detalle.id === detalleId ? data : detalle))
       );
 
-      // Actualizar el estado de la venta
       if (ventaId) {
         await updateVentaEstado(ventaId);
       }

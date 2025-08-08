@@ -6,7 +6,6 @@ const EscanearEntradaScreen = ({ route, navigation }) => {
   const { onUpdate, marca } = route.params || {};
 
   useEffect(() => {
-    // Configurar el título del header
     navigation.setOptions({
       title: `Entrada - ${marca?.nombre || "Productos"}`,
       headerStyle: {
@@ -20,11 +19,9 @@ const EscanearEntradaScreen = ({ route, navigation }) => {
   }, [navigation, marca]);
 
   const handleEntradaComplete = () => {
-    // Llamar al callback para actualizar la vista anterior
     if (onUpdate) {
       onUpdate();
     }
-    // Navegar de vuelta
     navigation.goBack();
   };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../supabase/supabase"; // Ajusta la ruta según tu estructura
+import { supabase } from "../supabase/supabase";
 
 export const useProductos = (marcaId = null) => {
   const [productos, setProductos] = useState([]);
@@ -43,7 +43,6 @@ export const useProductos = (marcaId = null) => {
 
         .order("nombre", { ascending: true });
 
-      // Si se especifica una marca, filtrar por ella
       if (filtroMarcaId) {
         query = query.eq("marca_id", filtroMarcaId);
       }
@@ -99,24 +98,20 @@ export const useProductos = (marcaId = null) => {
         )
         .order("nombre", { ascending: true });
 
-      // Verificar si es un número entero válido
       const numericValue = parseInt(searchTerm);
       const isValidNumber =
         !isNaN(numericValue) && numericValue.toString() === searchTerm.trim();
 
       if (isValidNumber) {
-        // Para números: buscar por código exacto o que el nombre empiece con ese número
         query = query.or(
           `codigo.eq.${numericValue},nombre.ilike.${searchTerm}%`
         );
       } else {
-        // Para texto: buscar palabras que empiecen con el término buscado
         const searchPattern = searchTerm
           .split(" ")
           .map((word) => `%${word}%`)
           .join("");
 
-        // Buscar que el nombre empiece con el término O que contenga palabras que empiecen con el término
         query = query.or(
           `nombre.ilike.${searchTerm}%,nombre.ilike.% ${searchTerm}%`
         );
@@ -141,12 +136,10 @@ export const useProductos = (marcaId = null) => {
     }
   };
 
-  // Nueva función para agregar un producto
   const agregarProducto = async (datosProducto) => {
     try {
       setError(null);
 
-      // Verificar si el código ya existe
       const { data: existingProduct, error: checkError } = await supabase
         .from("productos")
         .select("id, codigo")
@@ -156,7 +149,6 @@ export const useProductos = (marcaId = null) => {
         .single();
 
       if (checkError && checkError.code !== "PGRST116") {
-        // PGRST116 es el código para "no encontrado"
         throw checkError;
       }
 
@@ -164,7 +156,6 @@ export const useProductos = (marcaId = null) => {
         throw new Error("Ya existe un producto con ese código");
       }
 
-      // Verificar si el nombre ya existe para esta marca
       const { data: existingName, error: nameError } = await supabase
         .from("productos")
         .select("id, nombre")
@@ -180,7 +171,6 @@ export const useProductos = (marcaId = null) => {
         throw new Error("Ya existe un producto con ese nombre en esta marca");
       }
 
-      // Insertar el nuevo producto
       const { data, error } = await supabase
         .from("productos")
         .insert([datosProducto])
@@ -191,7 +181,6 @@ export const useProductos = (marcaId = null) => {
         throw error;
       }
 
-      // Actualizar la lista de productos
       await fetchProductos();
 
       return data;
@@ -201,17 +190,13 @@ export const useProductos = (marcaId = null) => {
       throw error;
     }
   };
-
-  // Nueva función para actualizar la cantidad de un producto
-
-  // Función completa para procesar una entrada
   const procesarEntradaCompleta = async (
     productoId,
     cantidadAgregar,
     codigoBarras = null,
     rackId = null,
     fechaCaducidad = null,
-    tipoUbicacion = "rack" // Por defecto, se asume que es un rack
+    tipoUbicacion = "rack"
   ) => {
     try {
       const codigoLimpio = codigoBarras
@@ -225,7 +210,6 @@ export const useProductos = (marcaId = null) => {
         }
         const marcaId = producto.marca_id;
 
-        // Solo verificar si tiene longitud mínima
         const tablaVerificar = tipoUbicacion === "suelto" ? "suelto" : "cajas";
 
         const { data, error: queryError } = await supabase
@@ -283,11 +267,10 @@ export const useProductos = (marcaId = null) => {
       const cajasAnteriores = producto.cajas || 0;
 
       const cantidadNueva = cantidadAnterior + cantidadAgregar;
-      const cajasNuevas = cajasAnteriores + 1; // porque cada escaneo es 1 caja
+      const cajasNuevas = cajasAnteriores + 1;
 
       const tablaDestino = tipoUbicacion === "suelto" ? "suelto" : "cajas";
 
-      // 2. Insertar nueva entrada en cajas
       const fechaCaducidadFinal =
         fechaCaducidad || obtenerFechaCaducidadDesdeCodigo(codigoBarras);
       const datosInsertar = {
@@ -297,7 +280,6 @@ export const useProductos = (marcaId = null) => {
         codigo_barras: codigoLimpio,
       };
 
-      // ✅ Solo agregar rack_id si NO es suelto
       if (tipoUbicacion !== "suelto") {
         datosInsertar.rack_id = rackId;
       }
@@ -307,8 +289,6 @@ export const useProductos = (marcaId = null) => {
         .insert(datosInsertar);
 
       if (insertError) throw insertError;
-
-      // 3. ✅ Marcar el rack como ocupado (solo si hay rack)
 
       return {
         cantidadAnterior,
@@ -323,10 +303,9 @@ export const useProductos = (marcaId = null) => {
     }
   };
 
-  // Agregar después de la función procesarEntradaCompleta
   async function procesarSalidaCompleta(
     productoId,
-    cantidadNecesaria, // Cantidad que aún se necesita completar
+    cantidadNecesaria,
     codigoBarras = null,
     detalleId = null
   ) {
@@ -352,12 +331,9 @@ export const useProductos = (marcaId = null) => {
       throw new Error("No hay lotes disponibles para este producto.");
     }
 
-    // ✅ CAMBIO: Procesar toda la cantidad disponible del código escaneado,
-    // pero limitada a la cantidad que aún se necesita
     let cantidadRestante = cantidadNecesaria;
     let cantidadTotalRestada = 0;
 
-    // 1. Obtener producto actual
     const { data: productoData, error: productoError } = await supabase
       .from("productos")
       .select("id, cantidad, cajas")
@@ -373,7 +349,6 @@ export const useProductos = (marcaId = null) => {
       if (cantidadRestante <= 0) break;
 
       const cantidadDisponible = lote.cantidad;
-      // ✅ Tomar toda la cantidad disponible del lote, pero limitada a lo que se necesita
       const aRestar = Math.min(cantidadDisponible, cantidadRestante);
 
       await supabase
@@ -384,25 +359,13 @@ export const useProductos = (marcaId = null) => {
       cantidadRestante -= aRestar;
       cantidadTotalRestada += aRestar;
 
-      // Si el lote se vacía, restar una caja
       if (aRestar === cantidadDisponible) {
         nuevasCajas -= 1;
       }
 
-      // Siempre restar de la cantidad total
       nuevaCantidad -= aRestar;
     }
 
-    // 3. Actualizar producto con la nueva cantidad y cajas
-    /*await supabase
-      .from("productos")
-      .update({
-        cantidad: nuevaCantidad,
-        cajas: nuevasCajas,
-      })
-      .eq("id", productoId);
-*/
-    // ✅ ACTUALIZAR escaneado en detalle_ventas si se proporcionó detalleId
     if (detalleId) {
       const { data: detalleActual, error: detalleError } = await supabase
         .from("detalle_ventas")
@@ -429,7 +392,6 @@ export const useProductos = (marcaId = null) => {
     };
   }
 
-  // Funcion para obtener la fecha desde el codigo de barras
   const obtenerFechaCaducidadDesdeCodigo = (codigoBarras) => {
     if (!codigoBarras || codigoBarras.length < 18) return null;
 
@@ -438,25 +400,22 @@ export const useProductos = (marcaId = null) => {
     const dd = codigoBarras.substring(16, 18);
 
     const anio = parseInt("20" + yy);
-    const mes = parseInt(mm) - 1; // Mes en JS es 0-indexed
+    const mes = parseInt(mm) - 1;
     const dia = parseInt(dd);
 
     return new Date(anio, mes, dia);
   };
 
-  // En useProductos.js
   const verificarCodigoBarrasUnico = async (codigoBarras) => {
     try {
       if (!codigoBarras || codigoBarras.trim().length === 0) {
-        return true; // Permitir si no hay código
+        return true;
       }
 
-      // Limpiar el código de barras (eliminar espacios, caracteres especiales)
       const codigoLimpio = codigoBarras.trim().replace(/\D/g, "");
 
-      // Verificar longitud mínima (ajusta según tus necesidades)
       if (codigoLimpio.length < 5) {
-        return true; // Códigos muy cortos no se verifican
+        return true;
       }
 
       const marcaFiltro = marcaId || marcaId;
@@ -475,7 +434,6 @@ export const useProductos = (marcaId = null) => {
         )
         .eq("codigo_barras", codigoLimpio);
 
-      // Solo filtrar por marca si se especifica
       if (marcaFiltro) {
         query = query.eq("productos.marca_id", marcaFiltro);
       }
@@ -484,17 +442,15 @@ export const useProductos = (marcaId = null) => {
 
       if (error) {
         console.error("Error en consulta:", error);
-        return true; // En caso de error, permitir continuar
+        return true;
       }
 
       return count === 0;
     } catch (error) {
       console.error("Error verificando código de barras:", error);
-      return true; // En caso de excepción, permitir continuar
+      return true;
     }
   };
-
-  // En useProductos.js
 
   const agregarPendiente = async (
     productoId,
@@ -557,7 +513,6 @@ export const useProductos = (marcaId = null) => {
 
   const confirmarPendiente = async (pendienteId) => {
     try {
-      // 1. Obtener el pendiente
       const { data: pendiente, error: pendienteError } = await supabase
         .from("pendientes")
         .select("*")
@@ -566,7 +521,6 @@ export const useProductos = (marcaId = null) => {
 
       if (pendienteError) throw pendienteError;
 
-      // 2. Determinar si va a cajas o suelto
       const esSuelto = pendiente.ubicacion === "SUELTO";
       const tablaDestino = esSuelto ? "suelto" : "cajas";
 
@@ -577,9 +531,7 @@ export const useProductos = (marcaId = null) => {
         codigo_barras: pendiente.codigo_barras,
       };
 
-      // Solo agregar rack_id si no es suelto
       if (!esSuelto) {
-        // Obtener el rack_id basado en el código de ubicación
         const { data: rack, error: rackError } = await supabase
           .from("racks")
           .select("id")
@@ -593,14 +545,12 @@ export const useProductos = (marcaId = null) => {
         datosInsertar.rack_id = rack.id;
       }
 
-      // 3. Insertar en la tabla destino
       const { error: insertError } = await supabase
         .from(tablaDestino)
         .insert(datosInsertar);
 
       if (insertError) throw insertError;
 
-      // 4. Eliminar el pendiente
       const { error: deleteError } = await supabase
         .from("pendientes")
         .delete()

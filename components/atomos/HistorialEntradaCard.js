@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { supabase } from "../../supabase/supabase";
-import CustomAlert from "../atomos/Alertas/CustomAlert"; // Asegúrate de tener este componente
+import CustomAlert from "../atomos/Alertas/CustomAlert"; 
 
 const HistorialEntradaCard = ({
   item,
@@ -31,10 +31,10 @@ const HistorialEntradaCard = ({
     const diffTime = caducidad - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return "#FF4444"; // rojo
-    if (diffDays <= 7) return "#FF8C00"; // naranja
-    if (diffDays <= 30) return "#FFD700"; // amarillo
-    return "#4CAF50"; // verde
+    if (diffDays < 0) return "#FF4444";
+    if (diffDays <= 7) return "#FF8C00";
+    if (diffDays <= 30) return "#FFD700";
+    return "#4CAF50";
   };
 
   const getStatusText = (fechaCaducidad) => {
@@ -53,7 +53,6 @@ const HistorialEntradaCard = ({
     setAlertProps({ title, message, buttons });
     setAlertVisible(true);
 
-    // Si no tiene botones, cerrar automáticamente después de 4 segundos
     if (buttons.length === 0) {
       setTimeout(() => {
         setAlertVisible(false);
@@ -63,7 +62,6 @@ const HistorialEntradaCard = ({
 
   const moverAPiso = async () => {
     try {
-      // Inicia la transacción
       const { data, error } = await supabase.rpc("mover_caja_a_piso", {
         caja_id: item.id,
       });
@@ -93,7 +91,6 @@ const HistorialEntradaCard = ({
           },
         ],
       });
-      // Callback para actualizar la lista en el componente padre
       if (onMoverAPiso) {
         onMoverAPiso(item.id);
       }

@@ -28,7 +28,6 @@ const FormularioAgregarProducto = ({
       [field]: value,
     }));
 
-    // Limpiar error al escribir
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,

@@ -1,4 +1,3 @@
-// ConfirmarPendienteScreen.js
 import React, { useState } from "react";
 import {
   View,
@@ -68,7 +67,6 @@ const ConfirmarPendienteScreen = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
         <View style={styles.headerContainer}>
           <MaterialIcons name="assignment" size={30} color="#023E8A" />
           <Text style={styles.headerSubtitle}>
@@ -76,7 +74,6 @@ const ConfirmarPendienteScreen = ({ route, navigation }) => {
           </Text>
         </View>
 
-        {/* Card del producto */}
         <View style={styles.productCard}>
           <View style={styles.productHeader}>
             <View style={styles.productTitleContainer}>
@@ -112,7 +109,6 @@ const ConfirmarPendienteScreen = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* Instrucciones */}
         <View style={styles.instructionsContainer}>
           <View style={styles.instructionItem}>
             <View style={styles.stepNumber}>
@@ -143,7 +139,6 @@ const ConfirmarPendienteScreen = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* Botón de validación */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.validateButton}

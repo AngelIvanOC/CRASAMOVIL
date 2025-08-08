@@ -18,10 +18,10 @@ const CardSuelto = ({ item, mostrarNombreProducto = false, onSubirSuelto }) => {
     const diffTime = caducidad - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return "#FF4444"; // rojo
-    if (diffDays <= 7) return "#FF8C00"; // naranja
-    if (diffDays <= 30) return "#FFD700"; // amarillo
-    return "#4CAF50"; // verde
+    if (diffDays < 0) return "#FF4444";
+    if (diffDays <= 7) return "#FF8C00";
+    if (diffDays <= 30) return "#FFD700";
+    return "#4CAF50";
   };
 
   const getStatusText = (fechaCaducidad) => {

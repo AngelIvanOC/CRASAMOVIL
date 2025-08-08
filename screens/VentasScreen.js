@@ -3,8 +3,6 @@ import { View, StyleSheet } from "react-native";
 import VentasTemplate from "../components/templates/VentasTemplate";
 
 const VentasScreen = ({ route, navigation }) => {
-  // Extraer marcaId de los parámetros si viene de navegación
-  // Por ejemplo, si navegas desde una pantalla de marca específica
   const marcaId = route?.params?.marcaId || null;
 
   return (

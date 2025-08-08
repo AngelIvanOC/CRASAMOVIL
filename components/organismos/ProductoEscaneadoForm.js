@@ -8,7 +8,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import CustomAlert from "../atomos/Alertas/CustomAlert"; // Asegúrate de importar CustomAlert
+import CustomAlert from "../atomos/Alertas/CustomAlert";
 
 const ProductoEscaneadoForm = ({
   productoEncontrado,
@@ -20,15 +20,13 @@ const ProductoEscaneadoForm = ({
   updating = false,
   setUpdating,
 }) => {
-  // Estados para los campos editables
   const [cantidadManual, setCantidadManual] = useState("");
   const [fechaCaducidadManual, setFechaCaducidadManual] = useState("");
   const [codigoBarrasManual, setCodigoBarrasManual] = useState("");
-  const [tipoUbicacion, setTipoUbicacion] = useState("rack"); // "rack" o "suelto"
+  const [tipoUbicacion, setTipoUbicacion] = useState("rack");
   const [showLocationAlert, setShowLocationAlert] = useState(false);
   const [espaciosDisponibles, setEspaciosDisponibles] = useState(0);
 
-  // Estados para CustomAlert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertProps, setAlertProps] = useState({
     title: "",
@@ -36,7 +34,6 @@ const ProductoEscaneadoForm = ({
     buttons: [],
   });
 
-  // Actualizar estados cuando cambie el producto
   useEffect(() => {
     if (productoEncontrado) {
       setCantidadManual(
@@ -51,12 +48,10 @@ const ProductoEscaneadoForm = ({
       );
       setCodigoBarrasManual(productoEncontrado.codigoBarras || "");
 
-      // Calcular espacios disponibles en racks
       const espaciosLibres = racksDisponibles.length;
 
       setEspaciosDisponibles(espaciosLibres);
 
-      // Si no hay espacios disponibles, ir directo a suelto
       if (espaciosLibres === 0) {
         setTipoUbicacion("suelto");
         showAlert({
@@ -80,7 +75,6 @@ const ProductoEscaneadoForm = ({
     setAlertProps({ title, message, buttons });
     setAlertVisible(true);
 
-    // Si no tiene botones, cerrar automáticamente después de 4 segundos
     if (buttons.length === 0) {
       setTimeout(() => {
         setAlertVisible(false);
@@ -91,21 +85,17 @@ const ProductoEscaneadoForm = ({
   const validateFields = () => {
     const errors = [];
 
-    // Validar código de barras
     if (!codigoBarrasManual || codigoBarrasManual.trim() === "") {
       errors.push("• Código de barras");
     }
 
-    // Validar fecha de caducidad
     if (!fechaCaducidadManual || fechaCaducidadManual.trim() === "") {
       errors.push("• Fecha de caducidad");
     } else {
-      // Validar formato de fecha
       const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!fechaRegex.test(fechaCaducidadManual)) {
         errors.push("• Fecha de caducidad debe tener formato YYYY-MM-DD");
       } else {
-        // Validar que sea una fecha válida
         const fecha = new Date(fechaCaducidadManual);
         if (isNaN(fecha.getTime())) {
           errors.push("• Fecha de caducidad no es válida");
@@ -113,7 +103,6 @@ const ProductoEscaneadoForm = ({
       }
     }
 
-    // Validar cantidad
     if (!cantidadManual || cantidadManual.trim() === "") {
       errors.push("• Cantidad");
     } else {
@@ -123,15 +112,12 @@ const ProductoEscaneadoForm = ({
       }
     }
 
-    // Validar rack si el tipo de ubicación es "rack"
     if (tipoUbicacion === "rack" && !rackSugerido) {
       errors.push("• Debe seleccionar un rack disponible");
     }
 
     return errors;
   };
-
-  // En ProductoEscaneadoForm.js
 
   const handleConfirm = async () => {
     const errors = validateFields();
@@ -155,9 +141,8 @@ const ProductoEscaneadoForm = ({
       tipoUbicacion === "suelto" ? "SUELTO" : rackSugerido?.codigo_rack;
 
     try {
-      setUpdating(true); // Usa la prop setUpdating
+      setUpdating(true);
 
-      // Crear objeto con todos los datos
       const datosCompletos = {
         ...productoEncontrado,
         cantidadEscaneada: cantidadFinal,
@@ -167,7 +152,6 @@ const ProductoEscaneadoForm = ({
         rackAsignado: tipoUbicacion === "rack" ? rackSugerido : null,
       };
 
-      // Pasar los datos al template padre para que maneje el pendiente
       onConfirmEntrada(datosCompletos, cantidadFinal);
     } catch (error) {
       showAlert({
@@ -222,7 +206,6 @@ const ProductoEscaneadoForm = ({
       <View style={styles.formContainer}>
         <Text style={styles.title}>Información del Producto Escaneado</Text>
 
-        {/* Campos NO editables */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Nombre del Producto:</Text>
           <TextInput
@@ -243,7 +226,6 @@ const ProductoEscaneadoForm = ({
           />
         </View>
 
-        {/* Campos EDITABLES - OBLIGATORIOS */}
         <View style={styles.inputContainer}>
           <Text style={[styles.label, styles.requiredLabel]}>
             Código de Barras: <Text style={styles.asterisk}>*</Text>
@@ -269,7 +251,6 @@ const ProductoEscaneadoForm = ({
           />
         </View>
 
-        {/* Selección de Tipo de Ubicación */}
         <View style={styles.inputContainer}>
           <Text style={[styles.label, styles.requiredLabel]}>
             Tipo de Ubicación: <Text style={styles.asterisk}>*</Text>
@@ -310,7 +291,6 @@ const ProductoEscaneadoForm = ({
           </View>
         </View>
 
-        {/* Mostrar información de ubicación según la selección */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>
             {tipoUbicacion === "rack" ? "Rack Asignado:" : "Ubicación:"}
@@ -334,7 +314,6 @@ const ProductoEscaneadoForm = ({
           </View>
         </View>
 
-        {/* CAMPO ÚNICO DE CANTIDAD - OBLIGATORIO */}
         <View style={styles.inputContainer}>
           <Text style={[styles.label, styles.requiredLabel]}>
             Cantidad a Agregar al Inventario:{" "}
@@ -352,7 +331,6 @@ const ProductoEscaneadoForm = ({
           />
         </View>
 
-        {/* Resumen de la operación */}
         <View style={styles.summaryContainer}>
           <Text style={styles.summaryTitle}>Resumen de la Entrada:</Text>
           <Text style={styles.summaryText}>
@@ -368,7 +346,6 @@ const ProductoEscaneadoForm = ({
           </Text>
         </View>
 
-        {/* Botones de acción */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.confirmButton}

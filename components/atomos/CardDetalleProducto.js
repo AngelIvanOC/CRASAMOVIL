@@ -5,17 +5,16 @@ const CardDetalleProducto = ({ detalle, onPress }) => {
   const isCompleted = detalle.estado?.toLowerCase() === "completado";
 
   const getStatusColor = (detalle) => {
-    // Lógica para determinar el color del estado basado en el campo 'estado'
     const estado = detalle.estado?.toLowerCase() || "incompleto";
 
     switch (estado) {
       case "completado":
-        return "#28a745"; // Verde - completado
+        return "#28a745";
       case "en_progreso":
-        return "#ffc107"; // Amarillo - procesando
+        return "#ffc107";
       case "incompleto":
       default:
-        return "#dc3545"; // Rojo - incompleto
+        return "#dc3545";
     }
   };
 
@@ -48,7 +47,6 @@ const CardDetalleProducto = ({ detalle, onPress }) => {
       style={[styles.card, isCompleted && styles.completedCard]}
       onPress={() => {
         if (isCompleted) {
-          // Mostrar alerta si está completado
           Alert.alert("Producto completado", "Este producto ya está surtido.", [
             { text: "OK", style: "default" },
           ]);
@@ -61,12 +59,6 @@ const CardDetalleProducto = ({ detalle, onPress }) => {
     >
       <View style={styles.cardContent}>
         <View style={styles.leftSection}>
-          {/*<View
-            style={[
-              styles.statusDot,
-              { backgroundColor: getStatusColor(detalle) },
-            ]}
-          />*/}
           <View style={styles.productInfo}>
             <Text style={styles.productName} numberOfLines={3}>
               {detalle.productos?.nombre || "Producto no disponible"}

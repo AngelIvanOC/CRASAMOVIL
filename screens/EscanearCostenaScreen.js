@@ -1,4 +1,3 @@
-// EscanearCostenaScreen.js
 import { View, StyleSheet } from "react-native";
 import { useEffect } from "react";
 import EscanearCostenaTemplate from "../components/templates/EscanearCostenaTemplate";

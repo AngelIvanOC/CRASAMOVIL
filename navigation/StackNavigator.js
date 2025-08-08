@@ -43,7 +43,6 @@ export default function StackNavigator() {
         ),
       }}
     >
-      {/* Pantalla principal del almacén (catálogo de marcas) */}
       <Stack.Screen
         name="Home"
         component={CatalogoScreen}
@@ -66,21 +65,16 @@ export default function StackNavigator() {
         }}
       />
 
-      {/* Pantalla de productos de una marca específica */}
       <Stack.Screen
         name="Productos"
         component={ProductosTemplate}
-        options={
-          {
-            // El título se configurará dinámicamente en ProductosTemplate
-          }
-        }
+        options={{}}
       />
 
       <Stack.Screen
         name="AgregarProducto"
         component={AgregarProductoScreen}
-        options={{ title: "Agregar Producto" }} // El header se maneja en el template
+        options={{ title: "Agregar Producto" }}
       />
 
       <Stack.Screen
@@ -143,7 +137,6 @@ export default function StackNavigator() {
         options={{ title: "Confirmar Pendientes" }}
       />
 
-      {/* Mantén tus otras pantallas si las necesitas */}
       <Stack.Screen
         name="Details"
         component={DetailsScreen}

@@ -1,4 +1,3 @@
-// EntradaManualSelector.js - Nuevo componente
 import React, { useState, useMemo } from "react";
 import {
   View,

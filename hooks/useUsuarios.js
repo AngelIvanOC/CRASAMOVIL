@@ -9,7 +9,6 @@ export const useUsuarios = () => {
 
   const tabla = "usuarios";
 
-  // Obtener todos los usuarios
   const fetchUsuarios = async () => {
     try {
       setLoading(true);
@@ -41,7 +40,6 @@ export const useUsuarios = () => {
     }
   };
 
-  // Obtener usuario actual (por id_auth)
   const fetchUsuarioActual = async () => {
     try {
       const {
@@ -68,7 +66,6 @@ export const useUsuarios = () => {
     }
   };
 
-  // Crear usuario completo (auth + perfil)
   const crearUsuarioCompleto = async (usuario) => {
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -104,7 +101,6 @@ export const useUsuarios = () => {
     }
   };
 
-  // Editar usuario
   const editarUsuario = async (usuario) => {
     try {
       const { error } = await supabase
@@ -122,7 +118,6 @@ export const useUsuarios = () => {
     }
   };
 
-  // Eliminar usuario
   const eliminarUsuario = async (id) => {
     try {
       const { error } = await supabase.from(tabla).delete().eq("id", id);
@@ -136,14 +131,11 @@ export const useUsuarios = () => {
     }
   };
 
-  // En useUsuarios, agrega este useEffect:
   useEffect(() => {
-    // Escuchar cambios en la sesión de auth
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Cuando hay sesión, buscar el usuario en la tabla
         const { data, error } = await supabase
           .from(tabla)
           .select(`*, roles:id_rol(id, nombre)`)
@@ -154,7 +146,6 @@ export const useUsuarios = () => {
           setUsuarioActual(data);
         }
       } else {
-        // No hay sesión, limpiar usuario
         setUsuarioActual(null);
       }
     });

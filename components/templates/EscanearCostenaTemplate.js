@@ -1,4 +1,3 @@
-// EscanearCostenaTemplate.js
 import React, { useState, useRef, useEffect } from "react";
 import {
   View,
@@ -67,7 +66,6 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     setAlertProps({ title, message, buttons });
     setAlertVisible(true);
 
-    // Si no tiene botones, cerrar automáticamente después de 4 segundos
     if (buttons.length === 0) {
       setTimeout(() => {
         setAlertVisible(false);
@@ -192,7 +190,6 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     }
   };
 
-  // En EscanearCostenaTemplate.js
   const handleConfirmEntrada = async (datosCompletos, cantidadFinal) => {
     try {
       setUpdating(true);
@@ -248,10 +245,8 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   };
 
   const handleQRRackEscaneado = (codigoQREscaneado) => {
-    // ✅ CASO 1: Si es tipo "suelto", validar que el QR sea "SUELTO"
     if (datosParaConfirmar?.datosCompletos?.tipoUbicacion === "suelto") {
       if (codigoQREscaneado.toUpperCase() === "SUELTO") {
-        // Código correcto para suelto
         showAlert({
           title: "¡Validación Exitosa!",
           message: `¿Confirmas la entrada de ${datosParaConfirmar.cantidadFinal} unidades del producto "${datosParaConfirmar.datosCompletos.nombre}" como producto SUELTO?`,
@@ -269,7 +264,6 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
               onPress: async () => {
                 setAlertVisible(false);
                 setEsperandoValidacionRack(false);
-                // ✅ Procesar entrada sin rack (null)
                 await procesarEntrada(
                   datosParaConfirmar.datosCompletos,
                   datosParaConfirmar.cantidadFinal
@@ -279,7 +273,6 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           ],
         });
       } else {
-        // Código incorrecto para suelto
         showAlert({
           title: "Código Incorrecto",
           message: `Para productos SUELTOS debes escanear el código QR que dice "SUELTO". Código escaneado: ${codigoQREscaneado}`,
@@ -306,7 +299,6 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       return;
     }
 
-    // ✅ CASO 2: Si es tipo "rack", validar con el rack asignado
     if (!rackSugerido) {
       showAlert({
         title: "Error",
@@ -359,9 +351,7 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
             text: "Reintentar",
             onPress: () => {
               setAlertVisible(false);
-              // AQUÍ ESTÁ EL CAMBIO CLAVE: Resetear el scanner QR
               setResetQRScanner(true);
-              // Resetear el flag después de un breve delay
               setTimeout(() => setResetQRScanner(false), 100);
             },
           },

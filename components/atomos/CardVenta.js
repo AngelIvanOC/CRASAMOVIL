@@ -53,9 +53,7 @@ const CardVenta = ({ venta, onPress, currentUser }) => {
   return (
     <View style={styles.card}>
       <View style={styles.contentContainer}>
-        {/* Contenido de dos columnas */}
         <View style={styles.infoContainer}>
-          {/* Fila superior */}
           <View style={styles.row}>
             <View style={styles.column}>
               <View style={styles.statusMarcaRow}>
@@ -82,7 +80,6 @@ const CardVenta = ({ venta, onPress, currentUser }) => {
             </View>
           </View>
 
-          {/* Fila inferior */}
           <View style={styles.row}>
             <View style={styles.column}>
               <Text style={styles.boldText}>Cantidad</Text>
@@ -110,7 +107,6 @@ const CardVenta = ({ venta, onPress, currentUser }) => {
           </View>
         </View>
 
-        {/* Botón */}
         <View style={styles.buttonWrapper}>
           <TouchableOpacity
             style={styles.enterButton}

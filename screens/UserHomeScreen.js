@@ -5,7 +5,6 @@ import { AuthContext } from "../context/AuthContext";
 const UserHomeScreen = ({ navigation }) => {
   const { logout, user } = useContext(AuthContext);
 
-  // Obtener nombre del usuario desde el email si no hay nombre completo
   const getUserName = () => {
     if (user?.user_metadata?.full_name) {
       return user.user_metadata.full_name;
@@ -22,7 +21,6 @@ const UserHomeScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Header naranja con perfil */}
       <View style={styles.header}>
         <View style={styles.profileSection}>
           <View style={styles.profileImageContainer}>
@@ -43,12 +41,8 @@ const UserHomeScreen = ({ navigation }) => {
         </View>
       </View>
 
-      {/* Contenido principal */}
       <View style={styles.content}>
-        <TouchableOpacity
-          style={styles.editButton}
-          //onPress={() => navigation.navigate("EditProfile")}
-        >
+        <TouchableOpacity style={styles.editButton}>
           <Text style={styles.editButtonText}>Edit Profile</Text>
         </TouchableOpacity>
 

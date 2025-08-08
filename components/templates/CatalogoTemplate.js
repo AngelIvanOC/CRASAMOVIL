@@ -7,7 +7,6 @@ const CatalogoTemplate = ({ navigation }) => {
   const { marcas, loading, error } = useMarcas();
 
   const handleMarcaPress = (marca) => {
-    // Navegar a la pantalla de productos de la marca seleccionada
     navigation.navigate("Productos", { marca });
   };
 

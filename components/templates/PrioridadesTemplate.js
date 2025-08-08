@@ -46,7 +46,6 @@ const PrioridadesTemplate = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Sección Próximos a Caducar */}
       <View>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Próximos a caducar</Text>
@@ -71,7 +70,6 @@ const PrioridadesTemplate = ({ navigation }) => {
         )}
       </View>
 
-      {/* Sección Pedidos Urgentes */}
       <View>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Pedidos urgentes</Text>

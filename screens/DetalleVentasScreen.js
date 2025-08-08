@@ -7,7 +7,6 @@ const DetalleVentaScreen = ({ route, navigation }) => {
   const id = ventaId || venta?.id;
 
   useEffect(() => {
-    // Configurar el título del header
     if (venta) {
       navigation.setOptions({
         title: `Venta ${venta.codigo || venta.id}`,

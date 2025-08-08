@@ -11,8 +11,7 @@ export const usePrioridades = () => {
     try {
       const today = new Date();
       const futureDate = new Date();
-      futureDate.setDate(today.getDate() + 30); // 30 días hacia adelante
-
+      futureDate.setDate(today.getDate() + 30); 
       const { data, error } = await supabase
         .from("cajas")
         .select(
@@ -31,9 +30,7 @@ export const usePrioridades = () => {
           )
         `
         )
-        .gt("cantidad", 0) // Solo productos con cantidad mayor a 0
-        //.gte("fecha_caducidad", today.toISOString()) // No vencidos
-        //.lte("fecha_caducidad", futureDate.toISOString()) // Próximos 30 días
+        .gt("cantidad", 0) 
         .order("fecha_caducidad", { ascending: true })
         .limit(3);
 
@@ -59,8 +56,8 @@ export const usePrioridades = () => {
           )
         `
         )
-        .neq("estado", "completado") // Solo ventas no completadas
-        .order("fecha", { ascending: false }) // Más recientes primero
+        .neq("estado", "completado") 
+        .order("fecha", { ascending: false }) 
         .limit(3);
 
       if (error) throw error;

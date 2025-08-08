@@ -29,9 +29,9 @@ const SueltoScreen = ({ route, navigation }) => {
   const handleSubirSueltoItem = (sueltoItem, rackSugerido) => {
     navigation.navigate("SubirSuelto", {
       producto,
-      sueltoItem, // La caja específica seleccionada
-      rackSugerido, // El rack sugerido donde debe ir
-      onUpdate: cargarHistorial, // Para refrescar después del escaneo
+      sueltoItem,
+      rackSugerido,
+      onUpdate: cargarHistorial,
     });
   };
 

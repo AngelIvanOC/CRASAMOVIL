@@ -37,7 +37,6 @@ const PisoTemplate = ({
     setAlertProps({ title, message, buttons });
     setAlertVisible(true);
 
-    // Si no tiene botones, cerrar automáticamente después de 4 segundos
     if (buttons.length === 0) {
       setTimeout(() => {
         setAlertVisible(false);
@@ -47,7 +46,6 @@ const PisoTemplate = ({
 
   const handleBajarCajaWithSuggestion = async () => {
     try {
-      // Obtener sugerencia (puede ser de rack o suelto)
       const sugerencia = await getSugerenciaRack(producto.id);
 
       if (!sugerencia || !sugerencia.cantidad || sugerencia.cantidad === 0) {
@@ -101,7 +99,6 @@ const PisoTemplate = ({
       });
     } catch (error) {
       console.error("Error obteniendo sugerencia:", error);
-      // Si hay error obteniendo la sugerencia, continúa normalmente
       showAlert({
         title: `Bajar ${producto.nombre} al Piso`,
         message: "¿Deseas proceder a bajar este producto al piso?",

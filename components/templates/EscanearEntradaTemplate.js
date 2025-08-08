@@ -18,7 +18,7 @@ import { useRacks } from "../../hooks/useRacks";
 import CamaraEscaneo from "../organismos/CamaraEscaneo";
 import CustomAlert from "../atomos/Alertas/CustomAlert";
 import ProductoEscaneadoForm from "../organismos/ProductoEscaneadoForm";
-import ValidacionRackQR from "../organismos/ValidacionRackQR"; // Componente que crearemos después
+import ValidacionRackQR from "../organismos/ValidacionRackQR";
 
 const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   const [permission, requestPermission] = useCameraPermissions();
@@ -59,7 +59,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     if (!permission) {
       requestPermission();
     }
-    // Cargar productos de la marca específica
     if (marca?.id) {
       fetchProductos(marca.id);
     }
@@ -68,7 +67,7 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       if (marca?.id) {
-        fetchProductos(marca.id); // recarga productos al volver
+        fetchProductos(marca.id);
       }
     });
 
@@ -79,11 +78,9 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     setAlertProps({ title, message, buttons });
     setAlertVisible(true);
 
-    // Si no tiene botones, cerrar automáticamente después de 4 segundos
     if (buttons.length === 0) {
       setTimeout(() => {
         setAlertVisible(false);
-        // Resetear estados después de mostrar la alerta
         resetScannerState();
       }, 4000);
     }
@@ -96,22 +93,18 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   };
 
   const extractProductInfo = (barcode) => {
-    // Función para extraer código de producto y cantidad del código de barras formato Jumex
     const cleanBarcode = barcode.trim();
     console.log("Código de barras completo:", cleanBarcode);
 
-    // Verificar que tenga al menos 12 dígitos (7 del código + 5 de cantidad)
     if (cleanBarcode.length < 12) {
       console.log("Código de barras muy corto:", cleanBarcode.length);
       return { productCode: cleanBarcode, cantidad: 0 };
     }
 
     if (cleanBarcode.length < 16) {
-      // TOMAR LOS ÚLTIMOS 4 DÍGITOS
       const ultimos4 = cleanBarcode.slice(-4);
       console.log("Últimos 4 dígitos:", ultimos4);
 
-      // QUITAR EL ÚLTIMO => quedan los 3 antepenúltimos
       const codigoProducto = ultimos4.slice(0, 3);
       console.log("Código de producto (3 antepenúltimos):", codigoProducto);
 
@@ -119,25 +112,21 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     }
 
     try {
-      // Extraer los primeros 7 dígitos (código del producto)
       const productCodeWithZeros = cleanBarcode.substring(0, 7);
       console.log("Código con ceros:", productCodeWithZeros);
 
-      // Remover ceros iniciales pero mantener al menos un dígito
       const productCode = productCodeWithZeros.replace(/^0+/, "") || "0";
       console.log("Código sin ceros:", productCode);
 
-      // Extraer los siguientes 5 dígitos (cantidad)
       const cantidadString = cleanBarcode.substring(7, 12);
       console.log("Cantidad string:", cantidadString);
 
-      // Convertir cantidad a número, removiendo ceros iniciales
       const cantidad = parseInt(cantidadString.replace(/^0+/, "") || "0");
       console.log("Cantidad final:", cantidad);
 
       return {
         productCode: productCode,
-        cantidad: cantidad > 0 ? cantidad : 0, // Asegurar que la cantidad sea al menos 1
+        cantidad: cantidad > 0 ? cantidad : 0,
       };
     } catch (error) {
       console.error("Error extrayendo información del código:", error);
@@ -176,8 +165,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     console.log("Longitud:", data.length);
     console.log("Tipo:", typeof data);
 
-    // Cambiar el filtro - los códigos EAN-13 tienen exactamente 13 dígitos
-    // pero también permitir otros formatos comunes
     if (!data || data.length < 8) {
       console.log("Código ignorado por longitud muy corta:", data);
       return;
@@ -185,9 +172,9 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
 
     if (data.length < 13) {
       console.log("Código ignorado por longitud:", data);
-      return; // ignorar códigos que no sean de 12 dígitos
+      return;
     }
-    // Verificar si ya se está procesando un escaneo
+
     if (alreadyHandledRef.current || scanned || updating) {
       console.log("Escaneo ignorado - ya procesando");
       return;
@@ -195,7 +182,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
 
     console.log("Procesando código escaneado:", data);
 
-    // Marcar como procesando
     alreadyHandledRef.current = true;
     setScanned(true);
     setScanning(false);
@@ -207,7 +193,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       const producto = findProductByCode(productCode);
 
       if (producto) {
-        // Verificar si el código de barras ya existe
         console.log("Verificando código de barras único...");
         const esUnico = await verificarCodigoBarrasUnico(data);
 
@@ -223,7 +208,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           "Producto encontrado y código único - mostrando información"
         );
 
-        // Obtener racks disponibles
         const racks = await obtenerRacksDisponiblesPorMarca(producto.marca_id);
         setRacksDisponibles(racks);
 
@@ -234,7 +218,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           setRackSugerido(null);
         }
 
-        // Configurar el producto encontrado
         setProductoEncontrado({
           ...producto,
           cantidadEscaneada: cantidad,
@@ -242,9 +225,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
         });
 
         setCantidadManual(cantidad.toString());
-
-        // NO resetear aquí - queremos mantener el estado para mostrar la información
-        // alreadyHandledRef.current = false;
       } else {
         console.log("Producto no encontrado");
         showAlert({
@@ -333,10 +313,8 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
   };
 
   const handleQRRackEscaneado = (codigoQREscaneado) => {
-    // ✅ CASO 1: Si es tipo "suelto", validar que el QR sea "SUELTO"
     if (datosParaConfirmar?.datosCompletos?.tipoUbicacion === "suelto") {
       if (codigoQREscaneado.toUpperCase() === "SUELTO") {
-        // Código correcto para suelto
         showAlert({
           title: "¡Validación Exitosa!",
           message: `¿Confirmas la entrada de ${datosParaConfirmar.cantidadFinal} unidades del producto "${datosParaConfirmar.datosCompletos.nombre}" como producto SUELTO?`,
@@ -354,7 +332,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
               onPress: async () => {
                 setAlertVisible(false);
                 setEsperandoValidacionRack(false);
-                // ✅ Procesar entrada sin rack (null)
                 await procesarEntrada(
                   datosParaConfirmar.datosCompletos,
                   datosParaConfirmar.cantidadFinal
@@ -364,7 +341,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           ],
         });
       } else {
-        // Código incorrecto para suelto
         showAlert({
           title: "Código Incorrecto",
           message: `Para productos SUELTOS debes escanear el código QR que dice "SUELTO". Código escaneado: ${codigoQREscaneado}`,
@@ -391,7 +367,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       return;
     }
 
-    // ✅ CASO 2: Si es tipo "rack", validar con el rack asignado
     if (!rackSugerido) {
       showAlert({
         title: "Error",
@@ -410,9 +385,7 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       return;
     }
 
-    // Comparar el código escaneado con el rack sugerido
     if (codigoQREscaneado === rackSugerido.codigo_rack) {
-      // Código correcto, proceder con la entrada
       showAlert({
         title: "¡Rack Validado!",
         message: `¿Confirmas la entrada de ${datosParaConfirmar.cantidadFinal} unidades del producto "${datosParaConfirmar.datosCompletos.nombre}" en el rack ${rackSugerido.codigo_rack}?`,
@@ -439,7 +412,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
         ],
       });
     } else {
-      // Código incorrecto
       showAlert({
         title: "Rack Incorrecto",
         message: `El código escaneado (${codigoQREscaneado}) no coincide con el rack asignado (${rackSugerido.codigo_rack}). Por favor, escanea el código QR del rack correcto.`,
@@ -448,9 +420,9 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
             text: "Reintentar",
             onPress: () => {
               setAlertVisible(false);
-              // AQUÍ ESTÁ EL CAMBIO CLAVE: Resetear el scanner QR
+
               setResetQRScanner(true);
-              // Resetear el flag después de un breve delay
+
               setTimeout(() => setResetQRScanner(false), 100);
             },
           },
@@ -478,13 +450,11 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
         tipoUbicacion: datosCompletos.tipoUbicacion,
       });
 
-      // ✅ Si es suelto, pasar null como rack_id
       const rackIdFinal =
         datosCompletos.tipoUbicacion === "suelto"
           ? null
           : rackSugerido?.id || null;
 
-      // Usar la función completa que actualiza el producto y crea el historial
       const resultado = await procesarEntradaCompleta(
         datosCompletos.id,
         cantidad,
@@ -496,7 +466,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
 
       console.log("Entrada procesada exitosamente:", resultado);
 
-      // Verificar que el resultado tenga los datos esperados
       if (!resultado || resultado.cantidadAnterior === undefined) {
         console.warn("Resultado incompleto, pero continuando...");
       }
@@ -514,7 +483,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
             text: "Continuar",
             onPress: () => {
               setAlertVisible(false);
-              // Resetear completamente para permitir otro escaneo
               setProductoEncontrado(null);
               setScanned(false);
               setScanning(false);
@@ -522,7 +490,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
               setRackSugerido(null);
               setRacksDisponibles([]);
               alreadyHandledRef.current = false;
-              // Recargar productos para obtener cantidades actualizadas
               fetchProductos(marca.id);
             },
           },
@@ -621,8 +588,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
 
   return (
     <View style={styles.container}>
-      {/* Información del producto encontrado */}
-
       {productoEncontrado && (
         <ProductoEscaneadoForm
           productoEncontrado={productoEncontrado}
@@ -644,11 +609,10 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           resetScan={resetQRScanner}
           tipoUbicacion={
             datosParaConfirmar?.datosCompletos?.tipoUbicacion || "rack"
-          } // ✅ Nuevo prop
+          }
         />
       )}
 
-      {/* Cámara de escaneo con botón integrado */}
       {!productoEncontrado && (
         <CamaraEscaneo
           onBarCodeScanned={handleBarCodeScanned}
@@ -659,64 +623,6 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           loading={updating}
         />
       )}
-      {/* Controles
-        <View style={styles.controlsContainer}>
-          {!productoEncontrado && !scanning && !scanned && (
-            <TouchableOpacity
-              style={styles.scanButton}
-              onPress={handleStartScanning}
-              disabled={updating}
-            >
-              <Text style={styles.scanButtonText}>
-                {updating ? "Procesando..." : "Iniciar Escaneo"}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {!productoEncontrado && scanning && (
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={handleCancelScanning}
-            >
-              <Text style={styles.cancelButtonText}>Cancelar Escaneo</Text>
-            </TouchableOpacity>
-          )}
-
-          {!productoEncontrado && scanned && (
-            <TouchableOpacity
-              style={styles.rescanButton}
-              onPress={handleRescan}
-              disabled={updating}
-            >
-              <Text style={styles.rescanButtonText}>Escanear Nuevamente</Text>
-            </TouchableOpacity>
-          )}
-
-          {productoEncontrado && (
-            <>
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={handleConfirmEntrada}
-                disabled={updating}
-              >
-                <Text style={styles.confirmButtonText}>
-                  {updating ? "Procesando..." : "Confirmar Entrada"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.cancelProductButton}
-                onPress={handleCancelProducto}
-                disabled={updating}
-              >
-                <Text style={styles.cancelProductButtonText}>
-                  Cancelar y Escanear Otro
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-         */}
 
       {updating && (
         <View style={styles.updatingOverlay}>

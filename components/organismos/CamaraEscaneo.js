@@ -26,7 +26,6 @@ const CamaraEscaneo = ({
           Presiona el botón para activar la cámara
         </Text>
 
-        {/* Botón flotante centrado */}
         <TouchableOpacity
           style={styles.startScanButton}
           onPress={onStartScanning}
@@ -66,20 +65,17 @@ const CamaraEscaneo = ({
         }}
       />
 
-      {/* Overlay con marco de escaneo */}
       <View style={styles.overlay}>
         <View style={styles.unfocusedContainer}>
           <View style={styles.middleContainer}>
             <View style={styles.unfocusedContainer} />
             <View style={styles.focusedContainer}>
               <View style={styles.scanFrame}>
-                {/* Esquinas del marco */}
                 <View style={[styles.corner, styles.topLeft]} />
                 <View style={[styles.corner, styles.topRight]} />
                 <View style={[styles.corner, styles.bottomLeft]} />
                 <View style={[styles.corner, styles.bottomRight]} />
 
-                {/* Línea de escaneo animada */}
                 <View style={styles.scanLine} />
               </View>
             </View>
@@ -87,14 +83,12 @@ const CamaraEscaneo = ({
           </View>
         </View>
 
-        {/* Instrucciones */}
         <View style={styles.instructionsContainer}>
           <Text style={styles.instructionsText}>
             Coloca el código de barras dentro del marco
           </Text>
         </View>
 
-        {/* Botón cancelar flotante */}
         <TouchableOpacity
           style={styles.cancelButton}
           onPress={onCancelScanning}

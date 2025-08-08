@@ -42,12 +42,7 @@ const ResumenVentaHeader = ({ venta, totalProductos }) => {
             <Text style={styles.statValue}>{totalProductos}</Text>
             <Text style={styles.statLabel}>Productos</Text>
           </View>
-          {/*<View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {venta.cantidad_productos || 0}
-            </Text>
-            <Text style={styles.statLabel}>Cant. Productos</Text>
-          </View>*/}
+
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{venta.cantidad_total || 0}</Text>
             <Text style={styles.statLabel}>Total</Text>

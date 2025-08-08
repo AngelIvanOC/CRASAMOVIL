@@ -22,7 +22,6 @@ export const useVentas = (marcaId = null) => {
       let query;
 
       if (usuarioActual.roles?.id === 5) {
-        // AYUDANTE: buscar por tabla intermedia
         const { data: ayudanteVentas, error: ayudanteError } = await supabase
           .from("ayudantes_venta")
           .select("venta_id")
@@ -50,7 +49,6 @@ export const useVentas = (marcaId = null) => {
           .in("id", ventaIds)
           .order("fecha", { ascending: false });
       } else {
-        // USUARIO NORMAL: buscar por columna usuario
         query = supabase
           .from("ventas")
           .select(
@@ -89,7 +87,6 @@ export const useVentas = (marcaId = null) => {
       let query;
 
       if (usuarioActual.roles?.id === 5) {
-        // AYUDANTE
         const { data: ayudanteVentas, error: ayudanteError } = await supabase
           .from("ayudantes_venta")
           .select("venta_id")
@@ -117,7 +114,6 @@ export const useVentas = (marcaId = null) => {
           .in("id", ventaIds)
           .order("fecha", { ascending: false });
       } else {
-        // USUARIO
         query = supabase
           .from("ventas")
           .select(
@@ -160,7 +156,6 @@ export const useVentas = (marcaId = null) => {
       let query;
 
       if (usuarioActual.roles?.id === 5) {
-        // Si es AYUDANTE, obtener los IDs de las ventas asignadas
         const { data: ayudanteVentas, error: ayudanteError } = await supabase
           .from("ayudantes_venta")
           .select("venta_id")
@@ -190,7 +185,6 @@ export const useVentas = (marcaId = null) => {
           .lte("fecha", endDate)
           .order("fecha", { ascending: false });
       } else {
-        // Si es USUARIO normal
         query = supabase
           .from("ventas")
           .select(
@@ -225,7 +219,6 @@ export const useVentas = (marcaId = null) => {
 
   const assignVentaToUser = async (ventaId, userAuthId) => {
     try {
-      // Primero, obtener el ID del usuario desde la tabla usuarios usando id_auth
       const { data: userData, error: userError } = await supabase
         .from("usuarios")
         .select("id_auth")
@@ -241,7 +234,6 @@ export const useVentas = (marcaId = null) => {
         throw new Error("Usuario no existe en la tabla usuarios");
       }
 
-      // Ahora actualizar la venta con el id_auth del usuario
       const { error } = await supabase
         .from("ventas")
         .update({ usuario: userData.id_auth, estado: "en_progreso" })
@@ -249,7 +241,6 @@ export const useVentas = (marcaId = null) => {
 
       if (error) throw error;
 
-      // Refrescar la lista después de asignar
       await fetchVentas(marcaId);
 
       return true;
@@ -263,7 +254,6 @@ export const useVentas = (marcaId = null) => {
     try {
       console.log("Actualizando estado de venta:", ventaId);
 
-      // Obtener todos los productos de la venta
       const { data: detalles, error: detalleError } = await supabase
         .from("detalle_ventas")
         .select("estado")
@@ -271,7 +261,6 @@ export const useVentas = (marcaId = null) => {
 
       if (detalleError) throw detalleError;
 
-      // Calcular el estado basado en los productos
       let nuevoEstado = "incompleto";
 
       if (detalles && detalles.length > 0) {
@@ -291,7 +280,6 @@ export const useVentas = (marcaId = null) => {
 
       console.log("Nuevo estado calculado:", nuevoEstado);
 
-      // Actualizar el estado de la venta
       const { error: updateError } = await supabase
         .from("ventas")
         .update({ estado: nuevoEstado })
@@ -299,7 +287,6 @@ export const useVentas = (marcaId = null) => {
 
       if (updateError) throw updateError;
 
-      // Refrescar la lista de ventas
       await fetchVentas(marcaId);
 
       return nuevoEstado;
@@ -313,7 +300,7 @@ export const useVentas = (marcaId = null) => {
     if (usuarioActual?.id_auth) {
       fetchVentas(marcaId);
     }
-  }, [usuarioActual?.id_auth]); // ← Quita marcaId de aquí para evitar bucles
+  }, [usuarioActual?.id_auth]); 
 
   return {
     ventas,

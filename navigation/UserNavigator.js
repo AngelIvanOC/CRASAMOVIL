@@ -15,8 +15,8 @@ const UserNavigator = () => {
   const { usuarioActual } = useUsuarios();
   const rolId = usuarioActual?.roles?.id;
 
-  const isRole4 = rolId === 4; // Solo "Pendientes" y "Configuración"
-  const isAyudante = rolId === 5; // Solo "Ventas" y "Configuración"
+  const isRole4 = rolId === 4; 
+  const isAyudante = rolId === 5;
 
   return (
     <Tab.Navigator
@@ -31,7 +31,6 @@ const UserNavigator = () => {
         },
       }}
     >
-      {/* Rol 4: solo Pendientes y Configuración */}
       {isRole4 && (
         <Tab.Screen
           name="Pendientes"
@@ -48,7 +47,6 @@ const UserNavigator = () => {
         />
       )}
 
-      {/* Rol 5 (Ayudante): solo Ventas y Configuración */}
       {isAyudante && (
         <Tab.Screen
           name="Ventas"
@@ -61,7 +59,6 @@ const UserNavigator = () => {
         />
       )}
 
-      {/* Otros roles: Almacén, Ventas, Prioridades, Configuración */}
       {!isRole4 && !isAyudante && (
         <>
           <Tab.Screen
@@ -96,7 +93,6 @@ const UserNavigator = () => {
         </>
       )}
 
-      {/* Configuración para todos */}
       <Tab.Screen
         name="Configuracion"
         component={UserHomeScreen}

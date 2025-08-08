@@ -9,7 +9,6 @@ const EscanearVentaScreen = ({ route, navigation }) => {
   const { updateVentaEstado } = useVentas();
 
   useEffect(() => {
-    // Configurar el título del header
     navigation.setOptions({
       title: `Escanear Producto`,
       headerStyle: {
@@ -24,20 +23,16 @@ const EscanearVentaScreen = ({ route, navigation }) => {
 
   const handleScanComplete = async () => {
     try {
-      //Actualizar estado de la venta
       if (ventaId) {
         await updateVentaEstado(ventaId);
       }
-      // Llamar al callback para actualizar la vista anterior
       if (onUpdate) {
         onUpdate();
       }
 
-      // Navegar de vuelta
       navigation.goBack();
     } catch (error) {
       console.error("Error in handleScanComplete:", error);
-      // Navegar de vuelta
       navigation.goBack();
     }
   };

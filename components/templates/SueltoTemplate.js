@@ -40,7 +40,6 @@ const SueltoTemplate = ({
 
   const handleSubirSueltoItem = async (sueltoItem) => {
     try {
-      // Obtener información del producto para saber la marca
       const { data: productoInfo, error: productoError } = await supabase
         .from("productos")
         .select("marca_id")
@@ -57,7 +56,6 @@ const SueltoTemplate = ({
         return;
       }
 
-      // Usar el hook para obtener racks disponibles (mismo orden que en entradas)
       const racks = await obtenerRacksDisponiblesPorMarca();
 
       if (!racks || racks.length === 0) {
@@ -71,7 +69,6 @@ const SueltoTemplate = ({
 
       const rackSugerido = racks[0];
 
-      // Resto del código igual...
       showAlert({
         title: "Confirmar movimiento",
         message: `¿Subir esta caja de ${producto.nombre} al rack ${rackSugerido.codigo_rack}?\n\n📦 Cantidad: ${sueltoItem.cantidad}\n📅 Caduca: ${new Date(sueltoItem.fecha_caducidad).toLocaleDateString("es-ES")}\n🎯 Destino: Rack ${rackSugerido.codigo_rack}`,

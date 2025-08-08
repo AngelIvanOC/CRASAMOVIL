@@ -13,7 +13,7 @@ const LoginScreen = () => {
   const { login } = useContext(AuthContext);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // Estado para controlar visibilidad
+  const [showPassword, setShowPassword] = useState(false);
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertProps, setAlertProps] = useState({
@@ -38,13 +38,12 @@ const LoginScreen = () => {
         onChangeText={setUsername}
       />
 
-      {/* Contenedor para el input de contraseña y el botón */}
       <View style={styles.passwordContainer}>
         <TextInput
           style={styles.passwordInput}
           placeholder="Contraseña"
           placeholderTextColor={"#000"}
-          secureTextEntry={!showPassword} // Controla la visibilidad
+          secureTextEntry={!showPassword}
           onChangeText={setPassword}
         />
         <TouchableOpacity
@@ -99,7 +98,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     color: "#000",
   },
-  // Contenedor para el input de contraseña y el botón del ojo
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -107,7 +105,6 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     color: "#000",
   },
-  // Input de contraseña que ocupa la mayor parte del espacio
   passwordInput: {
     flex: 1,
     height: 40,
@@ -119,7 +116,6 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 0,
     color: "#000",
   },
-  // Botón del ojo
   eyeButton: {
     height: 40,
     width: 40,

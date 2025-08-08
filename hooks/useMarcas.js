@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../supabase/supabase"; // Ajusta la ruta según tu estructura
+import { supabase } from "../supabase/supabase"; 
 
 export const useMarcas = () => {
   const [marcas, setMarcas] = useState([]);

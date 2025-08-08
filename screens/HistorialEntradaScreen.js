@@ -28,7 +28,6 @@ const HistorialEntradasScreen = ({ route }) => {
   };
 
   const handleMoverAPiso = (cajaId) => {
-    // Remueve la caja de la lista después de moverla
     setHistorial((prev) => prev.filter((item) => item.id !== cajaId));
   };
 
