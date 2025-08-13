@@ -34,6 +34,10 @@ const ProductoEscaneadoForm = ({
     buttons: [],
   });
 
+  const isCrasa =
+    productoEncontrado?.marca_id === 1 ||
+    productoEncontrado?.marca?.nombre?.toUpperCase() === "CRASA";
+
   useEffect(() => {
     if (productoEncontrado) {
       setCantidadManual(
@@ -50,23 +54,32 @@ const ProductoEscaneadoForm = ({
 
       const espaciosLibres = racksDisponibles.length;
 
-      setEspaciosDisponibles(espaciosLibres);
+      const isCrasa =
+        productoEncontrado?.marca_id === 1 ||
+        productoEncontrado?.marca?.nombre?.toUpperCase() === "CRASA";
 
-      if (espaciosLibres === 0) {
-        setTipoUbicacion("suelto");
-        showAlert({
-          title: "Sin espacios en racks",
-          message:
-            "No hay espacios disponibles en los racks. Puedes ubicar el producto como suelto o en piso.",
-          buttons: [
-            {
-              text: "Entendido",
-              onPress: () => setAlertVisible(false),
-            },
-          ],
-        });
+      if (isCrasa) {
+        setTipoUbicacion("piso");
+        setShowLocationAlert(false);
       } else {
-        setShowLocationAlert(true);
+        setEspaciosDisponibles(espaciosLibres);
+
+        if (espaciosLibres === 0) {
+          setTipoUbicacion("suelto");
+          showAlert({
+            title: "Sin espacios en racks",
+            message:
+              "No hay espacios disponibles en los racks. Puedes ubicar el producto como suelto o en piso.",
+            buttons: [
+              {
+                text: "Entendido",
+                onPress: () => setAlertVisible(false),
+              },
+            ],
+          });
+        } else {
+          setShowLocationAlert(true);
+        }
       }
     }
   }, [productoEncontrado]);
@@ -260,13 +273,16 @@ const ProductoEscaneadoForm = ({
               style={[
                 styles.pickerOption,
                 tipoUbicacion === "rack" && styles.pickerOptionSelected,
+                isCrasa && styles.disabledOption,
               ]}
-              onPress={() => setTipoUbicacion("rack")}
+              onPress={isCrasa ? null : () => setTipoUbicacion("rack")}
+              disabled={isCrasa}
             >
               <Text
                 style={[
                   styles.pickerOptionText,
                   tipoUbicacion === "rack" && styles.pickerOptionTextSelected,
+                  isCrasa && styles.disabledOption,
                 ]}
               >
                 Rack
@@ -292,13 +308,16 @@ const ProductoEscaneadoForm = ({
               style={[
                 styles.pickerOption,
                 tipoUbicacion === "suelto" && styles.pickerOptionSelected,
+                isCrasa && styles.disabledOption,
               ]}
-              onPress={() => setTipoUbicacion("suelto")}
+              onPress={isCrasa ? null : () => setTipoUbicacion("suelto")}
+              disabled={isCrasa}
             >
               <Text
                 style={[
                   styles.pickerOptionText,
                   tipoUbicacion === "suelto" && styles.pickerOptionTextSelected,
+                  isCrasa && styles.disabledOption,
                 ]}
               >
                 Suelto
@@ -577,6 +596,14 @@ const styles = StyleSheet.create({
   pickerOptionTextSelected: {
     color: "white",
     fontWeight: "bold",
+  },
+
+  disabledOption: {
+    backgroundColor: "#e0e0e0",
+    opacity: 0.6,
+  },
+  disabledOptionText: {
+    color: "#9e9e9e",
   },
 });
 
