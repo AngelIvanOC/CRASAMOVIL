@@ -13,12 +13,14 @@ import CustomAlert from "../atomos/Alertas/CustomAlert";
 const ProductoEscaneadoForm = ({
   productoEncontrado,
   onConfirmEntrada,
+  setProductoEncontrado,
   onCancel,
   rackSugerido,
   racksDisponibles,
   onRackChange,
   updating = false,
   setUpdating,
+  productos,
 }) => {
   const [cantidadManual, setCantidadManual] = useState("");
   const [fechaCaducidadManual, setFechaCaducidadManual] = useState("");
@@ -26,6 +28,8 @@ const ProductoEscaneadoForm = ({
   const [tipoUbicacion, setTipoUbicacion] = useState("rack");
   const [showLocationAlert, setShowLocationAlert] = useState(false);
   const [espaciosDisponibles, setEspaciosDisponibles] = useState(0);
+
+  const [codigoProducto, setCodigoProducto] = useState("");
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertProps, setAlertProps] = useState({
@@ -38,8 +42,46 @@ const ProductoEscaneadoForm = ({
     productoEncontrado?.marca_id === 1 ||
     productoEncontrado?.marca?.nombre?.toUpperCase() === "CRASA";
 
+  const [alertaUbicacionMostrada, setAlertaUbicacionMostrada] = useState(false);
+
   useEffect(() => {
-    if (productoEncontrado) {
+    if (codigoProducto && productoEncontrado?.esEntradaManual) {
+      // Buscar el producto por código en tiempo real
+      const producto = productos.find(
+        (p) => String(p.codigo).trim() === String(codigoProducto).trim()
+      );
+
+      if (producto) {
+        // Actualizar el producto encontrado con los datos del producto real
+        setProductoEncontrado((prev) => ({
+          ...prev,
+          id: producto.id,
+          nombre: producto.nombre,
+          codigo: producto.codigo,
+          cantidad: producto.cantidad,
+          marca_id: producto.marca_id,
+          // Mantener los datos de entrada manual
+          esEntradaManual: true,
+          cantidadEscaneada: prev.cantidadEscaneada,
+          codigoBarras: prev.codigoBarras,
+          fechaCaducidad: prev.fechaCaducidad,
+          datosOCR: prev.datosOCR,
+        }));
+      } else {
+        // Si no se encuentra el producto, mantener solo los datos básicos
+        setProductoEncontrado((prev) => ({
+          ...prev,
+          id: null,
+          nombre: "",
+          codigo: codigoProducto,
+          cantidad: 0,
+        }));
+      }
+    }
+  }, [codigoProducto, productos]);
+
+  useEffect(() => {
+    if (productoEncontrado && !alertaUbicacionMostrada) {
       setCantidadManual(
         productoEncontrado.cantidadEscaneada?.toString() || "0"
       );
@@ -51,6 +93,8 @@ const ProductoEscaneadoForm = ({
           : ""
       );
       setCodigoBarrasManual(productoEncontrado.codigoBarras || "");
+
+      setCodigoProducto(productoEncontrado.codigo?.toString() || "");
 
       const espaciosLibres = racksDisponibles.length;
 
@@ -81,8 +125,9 @@ const ProductoEscaneadoForm = ({
           setShowLocationAlert(true);
         }
       }
+      setAlertaUbicacionMostrada(true);
     }
-  }, [productoEncontrado]);
+  }, [productoEncontrado, alertaUbicacionMostrada]);
 
   const showAlert = ({ title, message, buttons = [] }) => {
     setAlertProps({ title, message, buttons });
@@ -97,6 +142,14 @@ const ProductoEscaneadoForm = ({
 
   const validateFields = () => {
     const errors = [];
+
+    if (!codigoProducto || codigoProducto.trim() === "") {
+      errors.push("• Código del producto");
+    } else if (productoEncontrado?.esEntradaManual && !productoEncontrado?.id) {
+      errors.push(
+        "• El código ingresado no corresponde a ningún producto registrado"
+      );
+    }
 
     if (!codigoBarrasManual || codigoBarrasManual.trim() === "") {
       errors.push("• Código de barras");
@@ -158,6 +211,7 @@ const ProductoEscaneadoForm = ({
 
       const datosCompletos = {
         ...productoEncontrado,
+        codigo: codigoProducto,
         cantidadEscaneada: cantidadFinal,
         codigoBarras: codigoBarrasManual,
         fechaCaducidad: fechaCaducidadManual,
@@ -223,19 +277,52 @@ const ProductoEscaneadoForm = ({
           <Text style={styles.label}>Nombre del Producto:</Text>
           <TextInput
             style={[styles.input, styles.readOnlyInput]}
-            value={productoEncontrado.nombre || ""}
+            value={productoEncontrado?.nombre || ""}
             editable={false}
             placeholder="Nombre del producto"
           />
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Código del Producto:</Text>
+          <Text
+            style={[
+              styles.label,
+              productoEncontrado?.esEntradaManual && styles.requiredLabel,
+            ]}
+          >
+            Código del Producto:
+            {productoEncontrado?.esEntradaManual && (
+              <Text style={styles.asterisk}> *</Text>
+            )}
+          </Text>
+          {productoEncontrado?.esEntradaManual &&
+            !productoEncontrado?.id &&
+            codigoProducto && (
+              <Text style={styles.warningText}>⚠️ Código no encontrado</Text>
+            )}
+          {productoEncontrado?.esEntradaManual && productoEncontrado?.id && (
+            <Text style={styles.successText}>✅ Producto encontrado</Text>
+          )}
           <TextInput
-            style={[styles.input, styles.readOnlyInput]}
-            value={productoEncontrado.codigo?.toString() || ""}
-            editable={false}
-            placeholder="Código del producto"
+            style={[
+              styles.input,
+              productoEncontrado?.esEntradaManual
+                ? styles.editableInput
+                : styles.readOnlyInput,
+            ]}
+            value={codigoProducto}
+            onChangeText={
+              productoEncontrado?.esEntradaManual
+                ? setCodigoProducto
+                : undefined
+            }
+            editable={productoEncontrado?.esEntradaManual || false}
+            placeholder={
+              productoEncontrado?.esEntradaManual
+                ? "Ingrese el código del producto"
+                : "Código del producto"
+            }
+            keyboardType="numeric"
           />
         </View>
 
@@ -411,7 +498,11 @@ const ProductoEscaneadoForm = ({
       <CustomAlert
         visible={showLocationAlert}
         title="Ubicacion del producto"
-        message={`¿Donde ubicaras "${productoEncontrado?.nombre || ""}"?`}
+        message={
+          productoEncontrado?.nombre
+            ? `¿Donde ubicaras "${productoEncontrado.nombre}"?`
+            : "¿Donde ubicaras tu producto?"
+        }
         buttons={[
           {
             text: `Rack (${espaciosDisponibles} libres)`,

@@ -558,6 +558,7 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       {productoEncontrado && (
         <ProductoEscaneadoForm
           productoEncontrado={productoEncontrado}
+          setProductoEncontrado={setProductoEncontrado}
           onConfirmEntrada={handleConfirmEntrada}
           onCancel={handleCancelProducto}
           rackSugerido={rackSugerido}
@@ -565,6 +566,7 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           onRackChange={setRackSugerido}
           updating={updating}
           setUpdating={setUpdating}
+          productos={productos}
         />
       )}
 

@@ -170,8 +170,8 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
 
       setProductoEncontrado({
         id: null,
-        codigo: "",
-        nombre: "",
+        codigo: productoManual.codigo || "",
+        nombre: productoManual.descripcion || "",
         cantidad: 0,
         marca_id: marca.id,
         cantidadEscaneada: productoManual.cantidad || 1,
@@ -675,6 +675,7 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       {productoEncontrado && (
         <ProductoEscaneadoForm
           productoEncontrado={productoEncontrado}
+          setProductoEncontrado={setProductoEncontrado}
           onConfirmEntrada={handleConfirmEntrada}
           onCancel={handleCancelProducto}
           rackSugerido={rackSugerido}
@@ -682,6 +683,7 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           onRackChange={setRackSugerido}
           updating={updating}
           setUpdating={setUpdating}
+          productos={productos}
         />
       )}
 
