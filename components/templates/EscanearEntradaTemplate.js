@@ -208,7 +208,10 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           "Producto encontrado y código único - mostrando información"
         );
 
-        const racks = await obtenerRacksDisponiblesPorMarca(producto.marca_id);
+        const racks = await obtenerRacksDisponiblesPorMarca(
+          producto.marca_id,
+          marca.nombre
+        );
         setRacksDisponibles(racks);
 
         if (racks.length > 0) {

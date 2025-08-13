@@ -82,7 +82,10 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
 
   const handleProductoDetectado = async (productoData) => {
     if (!productoData.codigo) {
-      const racks = await obtenerRacksDisponiblesPorMarca(marca.id);
+      const racks = await obtenerRacksDisponiblesPorMarca(
+        marca.id,
+        marca.nombre
+      );
       setRacksDisponibles(racks);
       setRackSugerido(racks.length > 0 ? racks[0] : null);
 
@@ -156,7 +159,10 @@ const EscanearCostenaTemplate = ({ navigation, onEntradaComplete, marca }) => {
         }
       }
 
-      const racks = await obtenerRacksDisponiblesPorMarca(producto.marca_id);
+      const racks = await obtenerRacksDisponiblesPorMarca(
+        producto.marca_id,
+        marca.nombre
+      );
       setRacksDisponibles(racks);
       setRackSugerido(racks.length > 0 ? racks[0] : null);
 

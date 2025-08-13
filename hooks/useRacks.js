@@ -5,7 +5,7 @@ export const useRacks = () => {
   const [racks, setRacks] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const obtenerRacksDisponiblesPorMarca = async () => {
+  const obtenerRacksDisponiblesPorMarca = async (marcaId, marcaNombre) => {
     setLoading(true);
 
     try {
@@ -19,10 +19,16 @@ export const useRacks = () => {
         return [];
       }
 
+      const nivelesPermitidos =
+        marcaNombre?.toUpperCase() === "JUMEX"
+          ? ["A", "B", "C"]
+          : ["D", "E", "F"];
+
       const { data: todosLosRacks, error: errorRacks } = await supabase
         .from("racks")
         .select("*")
         .eq("ocupado", false)
+        .in("nivel", nivelesPermitidos)
         .order("nivel", { ascending: true })
         .order("posicion", { ascending: true })
         .order("lado", { ascending: true });
