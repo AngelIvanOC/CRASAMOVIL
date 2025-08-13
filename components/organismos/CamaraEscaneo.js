@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   Dimensions,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { CameraView } from "expo-camera";
 
@@ -18,7 +19,47 @@ const CamaraEscaneo = ({
   onStartScanning,
   onCancelScanning,
   loading = false,
+  onProductoDetectado,
 }) => {
+  const [timer, setTimer] = useState(null);
+
+  useEffect(() => {
+    if (scanning && !scanned) {
+      // Iniciar temporizador de 5 segundos cuando se activa el escaneo
+      const timeout = setTimeout(() => {
+        if (!scanned && onProductoDetectado) {
+          Alert.alert(
+            "No se pudo procesar la imagen",
+            "¿Deseas ingresar manualmente?",
+            [
+              {
+                text: "Cancelar",
+                style: "cancel",
+              },
+              {
+                text: "Entrada Manual",
+                onPress: () => {
+                  const productoManual = {
+                    codigo: null,
+                    descripcion: null,
+                    fechaCaducidad: null,
+                    codigoBarras: null,
+                    cantidad: 1,
+                  };
+                  onProductoDetectado(productoManual);
+                },
+              },
+            ]
+          );
+        }
+      }, 7000); // 5 segundos
+
+      setTimer(timeout);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [scanning, scanned, onProductoDetectado]);
+
   if (!scanning) {
     return (
       <View style={styles.cameraPlaceholder}>

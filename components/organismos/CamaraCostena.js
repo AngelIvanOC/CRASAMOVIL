@@ -333,7 +333,6 @@ const CamaraCostena = ({ onProductoDetectado }) => {
       onProductoDetectado(productData);
       setDebugInfo("✅ Producto detectado");
     } catch (error) {
-      console.error("Error en OCR.space:", error);
       setDebugInfo(`❌ Error: ${error.message}`);
 
       Alert.alert(

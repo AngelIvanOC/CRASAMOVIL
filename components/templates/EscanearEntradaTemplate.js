@@ -159,7 +159,32 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
     return producto;
   };
 
-  const handleBarCodeScanned = async ({ data }) => {
+  const handleBarCodeScanned = async ({ data, productoManual }) => {
+    if (productoManual) {
+      const racks = await obtenerRacksDisponiblesPorMarca(
+        marca.id,
+        marca.nombre
+      );
+      setRacksDisponibles(racks);
+      setRackSugerido(racks.length > 0 ? racks[0] : null);
+
+      setProductoEncontrado({
+        id: null,
+        codigo: "",
+        nombre: "",
+        cantidad: 0,
+        marca_id: marca.id,
+        cantidadEscaneada: productoManual.cantidad || 1,
+        codigoBarras: productoManual.codigoBarras || "",
+        fechaCaducidad: productoManual.fechaCaducidad,
+        datosOCR: productoManual,
+        esEntradaManual: true,
+      });
+
+      setCantidadManual(productoManual.cantidad?.toString() || "1");
+      return;
+    }
+
     console.log("=== CÓDIGO ESCANEADO ===");
     console.log("Datos recibidos:", data);
     console.log("Longitud:", data.length);
@@ -680,6 +705,9 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
           onStartScanning={handleStartScanning}
           onCancelScanning={handleCancelScanning}
           loading={updating}
+          onProductoDetectado={(productoManual) =>
+            handleBarCodeScanned({ data: null, productoManual })
+          }
         />
       )}
 
