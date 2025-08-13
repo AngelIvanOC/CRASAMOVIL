@@ -56,12 +56,18 @@ const ValidacionRackQR = ({
     if (tipoUbicacion === "suelto") {
       return "Escanea el código QR que dice 'SUELTO'";
     }
+    if (tipoUbicacion === "piso") {
+      return "Escanea el código QR que dice 'PISO'";
+    }
     return `Escanea el código QR del rack: ${rackEsperado?.codigo_rack}`;
   };
 
   const getRackCode = () => {
     if (tipoUbicacion === "suelto") {
       return "SUELTO";
+    }
+    if (tipoUbicacion === "piso") {
+      return "PISO";
     }
     return rackEsperado?.codigo_rack;
   };

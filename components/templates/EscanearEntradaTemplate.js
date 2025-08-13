@@ -268,7 +268,9 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       const ubicacion =
         datosCompletos.tipoUbicacion === "suelto"
           ? "SUELTO"
-          : rackSugerido?.codigo_rack;
+          : datosCompletos.tipoUbicacion === "piso"
+            ? "PISO"
+            : rackSugerido?.codigo_rack;
 
       await agregarPendiente(
         datosCompletos.id,
@@ -347,6 +349,60 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
         showAlert({
           title: "Código Incorrecto",
           message: `Para productos SUELTOS debes escanear el código QR que dice "SUELTO". Código escaneado: ${codigoQREscaneado}`,
+          buttons: [
+            {
+              text: "Reintentar",
+              onPress: () => {
+                setAlertVisible(false);
+                setResetQRScanner(true);
+                setTimeout(() => setResetQRScanner(false), 100);
+              },
+            },
+            {
+              text: "Cancelar",
+              style: "cancel",
+              onPress: () => {
+                setAlertVisible(false);
+                setEsperandoValidacionRack(false);
+              },
+            },
+          ],
+        });
+      }
+      return;
+    }
+
+    if (datosParaConfirmar?.datosCompletos?.tipoUbicacion === "piso") {
+      if (codigoQREscaneado.toUpperCase() === "PISO") {
+        showAlert({
+          title: "¡Validación Exitosa!",
+          message: `¿Confirmas la entrada de ${datosParaConfirmar.cantidadFinal} unidades del producto "${datosParaConfirmar.datosCompletos.nombre}" en PISO?`,
+          buttons: [
+            {
+              text: "Cancelar",
+              style: "cancel",
+              onPress: () => {
+                setAlertVisible(false);
+                setEsperandoValidacionRack(false);
+              },
+            },
+            {
+              text: "Confirmar",
+              onPress: async () => {
+                setAlertVisible(false);
+                setEsperandoValidacionRack(false);
+                await procesarEntrada(
+                  datosParaConfirmar.datosCompletos,
+                  datosParaConfirmar.cantidadFinal
+                );
+              },
+            },
+          ],
+        });
+      } else {
+        showAlert({
+          title: "Código Incorrecto",
+          message: `Para productos en PISO debes escanear el código QR que dice "PISO". Código escaneado: ${codigoQREscaneado}`,
           buttons: [
             {
               text: "Reintentar",
@@ -454,9 +510,9 @@ const EscanearEntradaTemplate = ({ navigation, onEntradaComplete, marca }) => {
       });
 
       const rackIdFinal =
-        datosCompletos.tipoUbicacion === "suelto"
-          ? null
-          : rackSugerido?.id || null;
+        datosCompletos.tipoUbicacion === "rack"
+          ? rackSugerido?.id || null
+          : null;
 
       const resultado = await procesarEntradaCompleta(
         datosCompletos.id,

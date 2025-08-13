@@ -57,7 +57,7 @@ const ProductoEscaneadoForm = ({
         showAlert({
           title: "Sin espacios en racks",
           message:
-            "No hay espacios disponibles en los racks. El producto se ubicará como suelto automáticamente.",
+            "No hay espacios disponibles en los racks. Puedes ubicar el producto como suelto o en piso.",
           buttons: [
             {
               text: "Entendido",
@@ -269,7 +269,23 @@ const ProductoEscaneadoForm = ({
                   tipoUbicacion === "rack" && styles.pickerOptionTextSelected,
                 ]}
               >
-                Subir a Rack
+                Rack
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.pickerOption,
+                tipoUbicacion === "piso" && styles.pickerOptionSelected,
+              ]}
+              onPress={() => setTipoUbicacion("piso")}
+            >
+              <Text
+                style={[
+                  styles.pickerOptionText,
+                  tipoUbicacion === "piso" && styles.pickerOptionTextSelected,
+                ]}
+              >
+                Piso
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -293,7 +309,11 @@ const ProductoEscaneadoForm = ({
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>
-            {tipoUbicacion === "rack" ? "Rack Asignado:" : "Ubicación:"}
+            {tipoUbicacion === "rack"
+              ? "Rack Asignado:"
+              : tipoUbicacion === "piso"
+                ? "Ubicación:"
+                : "Ubicación:"}
             {tipoUbicacion === "rack" && (
               <Text style={styles.asterisk}> *</Text>
             )}
@@ -306,7 +326,9 @@ const ProductoEscaneadoForm = ({
                   ? rackSugerido
                     ? `${rackSugerido.codigo_rack}`
                     : "No hay racks disponibles"
-                  : "Producto Suelto - Sin ubicación específica"
+                  : tipoUbicacion === "piso"
+                    ? "Producto en Piso"
+                    : "Producto Suelto - Sin ubicación específica"
               }
               editable={false}
               placeholder="Ubicación del producto"
@@ -373,8 +395,12 @@ const ProductoEscaneadoForm = ({
         message={`¿Donde ubicaras "${productoEncontrado?.nombre || ""}"?`}
         buttons={[
           {
-            text: `En Rack (${espaciosDisponibles} libres)`,
+            text: `Rack (${espaciosDisponibles} libres)`,
             onPress: () => handleLocationSelection("rack"),
+          },
+          {
+            text: "Piso",
+            onPress: () => handleLocationSelection("piso"),
           },
           {
             text: "Suelto",

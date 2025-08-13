@@ -210,7 +210,12 @@ export const useProductos = (marcaId = null) => {
         }
         const marcaId = producto.marca_id;
 
-        const tablaVerificar = tipoUbicacion === "suelto" ? "suelto" : "cajas";
+        const tablaVerificar =
+          tipoUbicacion === "suelto"
+            ? "suelto"
+            : tipoUbicacion === "piso"
+              ? "piso"
+              : "cajas";
 
         const { data, error: queryError } = await supabase
           .from(tablaVerificar)
@@ -236,29 +241,37 @@ export const useProductos = (marcaId = null) => {
           );
         }
 
-        const tablaOpuesta = tipoUbicacion === "suelto" ? "cajas" : "suelto";
-        const { data: dataOpuesta, error: queryErrorOpuesta } = await supabase
-          .from(tablaOpuesta)
-          .select(
-            `
+        const tablasOpuestas =
+          tipoUbicacion === "suelto"
+            ? ["cajas", "piso"]
+            : tipoUbicacion === "piso"
+              ? ["cajas", "suelto"]
+              : ["suelto", "piso"];
+
+        for (const tablaOpuesta of tablasOpuestas) {
+          const { data: dataOpuesta, error: queryErrorOpuesta } = await supabase
+            .from(tablaOpuesta)
+            .select(
+              `
           *,
           productos!inner (
             id,
             marca_id
           )
         `
-          )
-          .eq("codigo_barras", codigoLimpio)
-          .eq("productos.marca_id", marcaId);
+            )
+            .eq("codigo_barras", codigoLimpio)
+            .eq("productos.marca_id", marcaId);
 
-        if (queryErrorOpuesta) {
-          throw queryErrorOpuesta;
-        }
+          if (queryErrorOpuesta) {
+            throw queryErrorOpuesta;
+          }
 
-        if (dataOpuesta && dataOpuesta.length > 0) {
-          throw new Error(
-            `Este código de barras ya fue registrado en ${tablaOpuesta} para esta marca`
-          );
+          if (dataOpuesta && dataOpuesta.length > 0) {
+            throw new Error(
+              `Este código de barras ya fue registrado en ${tablaOpuesta} para esta marca`
+            );
+          }
         }
       }
 
@@ -269,7 +282,12 @@ export const useProductos = (marcaId = null) => {
       const cantidadNueva = cantidadAnterior + cantidadAgregar;
       const cajasNuevas = cajasAnteriores + 1;
 
-      const tablaDestino = tipoUbicacion === "suelto" ? "suelto" : "cajas";
+      const tablaDestino =
+        tipoUbicacion === "suelto"
+          ? "suelto"
+          : tipoUbicacion === "piso"
+            ? "piso"
+            : "cajas";
 
       const fechaCaducidadFinal =
         fechaCaducidad || obtenerFechaCaducidadDesdeCodigo(codigoBarras);
@@ -280,7 +298,7 @@ export const useProductos = (marcaId = null) => {
         codigo_barras: codigoLimpio,
       };
 
-      if (tipoUbicacion !== "suelto") {
+      if (tipoUbicacion === "rack") {
         datosInsertar.rack_id = rackId;
       }
 
@@ -460,6 +478,11 @@ export const useProductos = (marcaId = null) => {
     fechaCaducidad = null
   ) => {
     try {
+      let ubicacionFinal = ubicacion;
+      if (ubicacion === "PISO") {
+        ubicacionFinal = "PISO";
+      }
+
       const { data, error } = await supabase
         .from("pendientes")
         .insert([
@@ -467,7 +490,7 @@ export const useProductos = (marcaId = null) => {
             producto_id: productoId,
             cantidad: cantidad,
             codigo_barras: codigoBarras,
-            ubicacion: ubicacion,
+            ubicacion: ubicacionFinal,
             fecha_caducidad: fechaCaducidad,
           },
         ])
@@ -522,7 +545,8 @@ export const useProductos = (marcaId = null) => {
       if (pendienteError) throw pendienteError;
 
       const esSuelto = pendiente.ubicacion === "SUELTO";
-      const tablaDestino = esSuelto ? "suelto" : "cajas";
+      const esPiso = pendiente.ubicacion === "PISO";
+      const tablaDestino = esSuelto ? "suelto" : esPiso ? "piso" : "cajas";
 
       const datosInsertar = {
         producto_id: pendiente.producto_id,
@@ -531,7 +555,7 @@ export const useProductos = (marcaId = null) => {
         codigo_barras: pendiente.codigo_barras,
       };
 
-      if (!esSuelto) {
+      if (!esSuelto && !esPiso) {
         const { data: rack, error: rackError } = await supabase
           .from("racks")
           .select("id")
